@@ -41,9 +41,7 @@
           <a class="brand" href="${siteHref("index.html")}" aria-label="Ace with Mr. Yeboah home">
             ${CREST_SVG}
             <span class="brand-text">
-              <span class="brand-code">UMAT · STUDY RESOURCES</span>
-              <span class="brand-divider" aria-hidden="true"></span>
-              <span class="brand-name">Ace with<br>Mr. Yeboah</span>
+              <span class="brand-name">Ace</span>
             </span>
           </a>
           <div class="header-right">
@@ -52,10 +50,10 @@
               <a href="${siteHref("courses.html")}" ${page === "courses" || page === "course" ? 'class="active"' : ""}>Programmes</a>
               <a href="${siteHref("resources.html")}" ${page === "resources" ? 'class="active"' : ""}>Resources</a>
               <a href="${siteHref("about.html")}" ${page === "about" ? 'class="active"' : ""}>About</a>
-              <a href="${siteHref("admin.html")}">Admin</a>
             </nav>
             <div class="header-actions">
               <a class="icon-btn" href="${siteHref("resources.html")}" aria-label="Search resources" title="Search">${ICONS.search}</a>
+              <a class="header-cta" href="${siteHref("admin.html")}">Admin <span class="cta-dot" aria-hidden="true">→</span></a>
               <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="main-nav">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
               </button>
@@ -1139,10 +1137,11 @@
         loading.textContent = "No published materials yet. Open Admin to upload.";
       } else {
         loading.remove();
-        if (usingSample) {
+        if (usingSample && page === "home") {
+          /* quiet: featured card already says sample pack */
+        } else if (usingSample) {
           const banner = document.createElement("div");
-          banner.className = "empty-state";
-          banner.style.cssText = "padding:0.85rem 1rem;margin:0.75rem auto 0;max-width:var(--max);text-align:center;color:var(--text-muted);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--sage)";
+          banner.className = "sample-banner";
           banner.textContent = "Showing sample materials. Connect Supabase in Admin to publish Frank’s live library.";
           if (main) main.prepend(banner);
         }
