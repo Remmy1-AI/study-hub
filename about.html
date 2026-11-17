@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="./assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png" />
+  <meta name="application-name" content="Ace with Mr. Yeboah" />
+  <meta name="apple-mobile-web-app-title" content="Ace with Mr. Yeboah" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1F4A36" />
+  <link rel="manifest" href="./site.webmanifest" />
+  <title>About | Ace with Mr. Yeboah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css?v=20261117ace1" />
+</head>
+<body data-page="about">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" id="site-header"></header>
+  <main class="main" id="main">
+    <section class="page-hero">
+      <div class="container" style="position:relative;z-index:1">
+        <h1>About Ace with Mr. Yeboah</h1>
+        <p>Learn • Share • Succeed</p>
+      </div>
+    </section>
+    <section class="section">
+      <div class="container about-grid">
+        <article class="prose">
+          <p>
+            <strong>Ace with Mr. Yeboah</strong> is a study-resources hub for students at the
+            University of Mines and Technology (UMAT). Find course slides, lecture notes,
+            past questions, tutorials, and peer materials — organised by programme.
+          </p>
+          <p>
+            It is built by <strong>Frank Yeboah</strong>, an Electrical student at UMAT, for
+            every programme on campus — not just engineering.
+          </p>
+          <h2>How materials are organised</h2>
+          <div class="org-chain">
+            <span>Programme</span><span class="arrow">→</span>
+            <span>Level</span><span class="arrow">→</span>
+            <span>Course</span><span class="arrow">→</span>
+            <span>Material</span>
+          </div>
+          <p>Example: Electrical → Level 200 → EE 201 → Past Questions.</p>
+          <h2 id="faqs">FAQs</h2>
+          <div class="faq-item">
+            <h3>Who is this for?</h3>
+            <p>All UMAT students across the programmes listed on this site.</p>
+          </div>
+          <div class="faq-item">
+            <h3>Is this an official university site?</h3>
+            <p>No — it is a student-led knowledge bank run by Frank Yeboah.</p>
+          </div>
+          <div class="faq-item">
+            <h3>How do I search?</h3>
+            <p>Use the search box on the home page, or filters on Programmes and Resources.</p>
+          </div>
+          <div class="faq-item">
+            <h3>How do materials get added?</h3>
+            <p>Frank publishes through Admin. A student contribution form comes in a later phase.</p>
+          </div>
+          <h2 id="contact">Contact</h2>
+          <p>Questions about the library can go through Frank once contact details are published here.</p>
+          <h2 id="terms">Terms of Service</h2>
+          <p>Respect copyright. Share only materials you have rights to distribute for study use.</p>
+          <h2 id="privacy">Privacy Policy</h2>
+          <p>When live, the public catalog is stored in Supabase. Visit counts and download/share stats may be recorded for the owner dashboard.</p>
+        </article>
+        <aside class="info-card">
+          <h3>Brand</h3>
+          <p style="color:var(--text-muted);font-size:0.92rem;margin-bottom:1rem">
+            Ace with Mr. Yeboah<br />
+            Tagline: Learn • Share • Succeed<br />
+            Closing: From Frank, for UMAT.
+          </p>
+          <h3>Programmes</h3>
+          <ul id="about-programmes"></ul>
+          <p style="margin-top:1.25rem">
+            <a class="btn btn-primary" href="./courses.html">Browse programmes</a>
+          </p>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="./js/data.js?v=20261117ace1"></script>
+  <script src="./js/supabase-config.js?v=20261117ace1"></script>
+  <script src="./js/ebb-api.js?v=20261117ace1"></script>
+  <script src="./js/app.js?v=20261117ace1"></script>
+  <script>
+    (function () {
+      const ul = document.getElementById("about-programmes");
+      if (!ul || !window.EBB) return;
+      ul.innerHTML = EBB.departments.map((d) => `<li>${d.name}</li>`).join("");
+    })();
+  </script>
+</body>
+</html>

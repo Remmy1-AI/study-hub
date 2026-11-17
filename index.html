@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="./assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/favicon/apple-touch-icon.png" />
+  <meta name="application-name" content="Ace with Mr. Yeboah" />
+  <meta name="apple-mobile-web-app-title" content="Ace with Mr. Yeboah" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1F4A36" />
+  <link rel="manifest" href="./site.webmanifest" />
+  <title>Ace with Mr. Yeboah | UMAT Study Resources</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Ace with Mr. Yeboah" />
+  <meta property="og:url" content="https://mryeboah.study/" />
+  <meta property="og:title" content="Ace with Mr. Yeboah" />
+  <meta property="og:description" content="Study resources for every UMAT student — slides, notes, and past questions. Learn • Share • Succeed." />
+  <meta property="og:image" content="https://mryeboah.study/assets/og/homepage-card.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Ace with Mr. Yeboah" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Ace with Mr. Yeboah" />
+  <meta name="twitter:description" content="Study resources for every UMAT student — slides, notes, and past questions." />
+  <meta name="twitter:image" content="https://mryeboah.study/assets/og/homepage-card.jpg" />
+  <meta name="description" content="Ace with Mr. Yeboah — study resources for every UMAT student. Learn • Share • Succeed. From Frank, for UMAT." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css?v=20261117ace1" />
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" id="site-header"></header>
+
+  <main class="main" id="main">
+    <section class="hero hero-coursebook">
+      <div class="container hero-copy">
+        <p class="hero-brand">Learn • Share • Succeed</p>
+        <h1 class="hero-title">Ace with Mr. Yeboah</h1>
+        <p class="hero-purpose">Study resources for every UMAT student — slides, notes, past questions, and more.</p>
+
+        <div class="search-box">
+          <form id="hero-search-form" role="search" aria-label="Search Ace">
+            <input
+              id="hero-search"
+              type="search"
+              placeholder="Search course codes or topics"
+              autocomplete="off"
+              aria-autocomplete="list"
+              aria-controls="search-results"
+            />
+            <button type="submit" class="search-submit" aria-label="Search">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F4F0E7" stroke-width="2.6" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+              </svg>
+            </button>
+          </form>
+          <div id="search-results" class="search-results" role="listbox" aria-label="Search results"></div>
+        </div>
+
+        <div class="hero-ctas">
+          <a class="btn btn-primary btn-lg" href="./courses.html">Browse programmes</a>
+          <a class="btn btn-ghost btn-lg" href="./resources.html">All resources</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tight">
+      <div class="container">
+        <div class="feature-grid" id="feature-grid"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">Browse by programme</h2>
+        <div class="dept-grid" id="dept-grid"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">Recently added</h2>
+        <div class="recent-rail" id="recent-list"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="contribute-band">
+          <div>
+            <h2>Built for UMAT</h2>
+            <p>Frank Yeboah is gathering materials across programmes so every student can find what they need in one place.</p>
+          </div>
+          <a class="btn btn-primary" href="./about.html">About Ace</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="./js/data.js?v=20261117ace1"></script>
+  <script src="./js/supabase-config.js?v=20261117ace1"></script>
+  <script src="./js/ebb-api.js?v=20261117ace1"></script>
+  <script src="./js/og-card.js?v=20261117ace1"></script>
+  <script src="./js/app.js?v=20261117ace1"></script>
+</body>
+</html>

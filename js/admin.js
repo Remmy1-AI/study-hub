@@ -1,0 +1,538 @@
+/* Ace with Mr. Yeboah — Owner Admin (vanilla IIFE) */
+(function () {
+  "use strict";
+
+  function qs(sel, root) { return (root || document).querySelector(sel); }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function show(el, on) {
+    if (!el) return;
+    el.hidden = !on;
+  }
+
+  function setError(id, msg) {
+    const el = qs("#" + id);
+    if (!el) return;
+    if (msg) {
+      el.textContent = msg;
+      el.hidden = false;
+    } else {
+      el.textContent = "";
+      el.hidden = true;
+    }
+  }
+
+  async function boot() {
+    const panelSetup = qs("#panel-setup");
+    const panelLogin = qs("#panel-login");
+    const panelDash = qs("#panel-dash");
+    const btnLogout = qs("#btn-logout");
+
+    if (!window.EBBApi || !EBBApi.isConfigured()) {
+      show(panelSetup, true);
+      show(panelLogin, false);
+      show(panelDash, false);
+      return;
+    }
+
+    const sb = await EBBApi.getClient();
+    if (!sb) {
+      show(panelSetup, true);
+      return;
+    }
+
+    // Fill selects
+    const deptSel = qs("#up-dept");
+    const levelSel = qs("#up-level");
+    const typeSel = qs("#up-type");
+    const fileInput = qs("#up-file");
+    const progName = qs("#prog-name");
+    const progId = qs("#prog-id");
+
+    function fillDeptSelect(selected) {
+      if (!deptSel || !window.EBB) return;
+      const keep = selected != null ? selected : deptSel.value;
+      deptSel.innerHTML =
+        `<option value="">—</option>` +
+        EBB.departments
+          .map((d) => `<option value="${d.id}">${d.name}</option>`)
+          .join("");
+      if (keep && [...deptSel.options].some((o) => o.value === keep)) {
+        deptSel.value = keep;
+      }
+    }
+
+    fillDeptSelect();
+    if (levelSel && window.EBB) {
+      levelSel.innerHTML = `<option value="">—</option>` +
+        EBB.levels.map((l) => `<option value="${l.id}">${l.name}</option>`).join("");
+    }
+    if (typeSel && window.EBB) {
+      typeSel.innerHTML = EBB.materialTypes.map((t) =>
+        `<option value="${t.id}">${t.name}</option>`
+      ).join("");
+    }
+    if (fileInput) fileInput.setAttribute("accept", EBBApi.acceptAttr());
+
+    function setAdminTab(tabId) {
+      const id = tabId || "upload";
+      document.querySelectorAll("#admin-tabs .admin-tab").forEach((btn) => {
+        const on = btn.getAttribute("data-tab") === id;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      document.querySelectorAll("[data-tab-panel]").forEach((panel) => {
+        panel.hidden = panel.getAttribute("data-tab-panel") !== id;
+      });
+      try {
+        sessionStorage.setItem("ebb-admin-tab", id);
+      } catch (_) {}
+    }
+
+    qs("#admin-tabs")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".admin-tab[data-tab]");
+      if (!btn) return;
+      setAdminTab(btn.getAttribute("data-tab"));
+    });
+
+    let savedTab = "upload";
+    try {
+      savedTab = sessionStorage.getItem("ebb-admin-tab") || "upload";
+    } catch (_) {}
+    setAdminTab(savedTab);
+
+    // Auto-suggest programme slug from name
+    progName?.addEventListener("input", () => {
+      if (!progId || progId.dataset.touched === "1") return;
+      progId.value = window.EBB ? EBB.slugifyProgrammeId(progName.value) : "";
+    });
+    progId?.addEventListener("input", () => {
+      progId.dataset.touched = progId.value.trim() ? "1" : "";
+    });
+
+    async function enterDash(session) {
+      show(panelSetup, false);
+      show(panelLogin, false);
+      show(panelDash, true);
+      show(btnLogout, true);
+      const userEl = qs("#dash-user");
+      if (userEl) userEl.textContent = session?.user?.email || "Signed in";
+      await refreshAll();
+    }
+
+    function enterLogin() {
+      show(panelSetup, false);
+      show(panelLogin, true);
+      show(panelDash, false);
+      show(btnLogout, false);
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await enterDash(session);
+    else enterLogin();
+
+    sb.auth.onAuthStateChange(async (_event, sess) => {
+      if (sess) await enterDash(sess);
+      else enterLogin();
+    });
+
+    qs("#login-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError("login-error", "");
+      const email = qs("#login-email")?.value?.trim();
+      const password = qs("#login-password")?.value || "";
+      const btn = qs("#login-submit");
+      if (btn) btn.disabled = true;
+      try {
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } catch (err) {
+        setError("login-error", err.message || "Sign-in failed");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    btnLogout?.addEventListener("click", async () => {
+      await sb.auth.signOut();
+    });
+
+    qs("#btn-refresh")?.addEventListener("click", () => refreshAll());
+
+    qs("#programme-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError("prog-error", "");
+      const okEl = qs("#prog-ok");
+      if (okEl) { okEl.hidden = true; okEl.textContent = ""; }
+
+      const name = qs("#prog-name")?.value?.trim();
+      let id = qs("#prog-id")?.value?.trim().toLowerCase();
+      const short_name = qs("#prog-short")?.value?.trim() || null;
+      const code = qs("#prog-code")?.value?.trim() || null;
+      if (!name) {
+        setError("prog-error", "Programme name is required.");
+        return;
+      }
+      if (!id && window.EBB) id = EBB.slugifyProgrammeId(name);
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id || "")) {
+        setError("prog-error", "Id must be lowercase letters, numbers, and hyphens.");
+        return;
+      }
+
+      const btn = qs("#prog-submit");
+      if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+      try {
+        await EBBApi.createProgramme({
+          id,
+          name,
+          short_name:
+            short_name ||
+            name.replace(/\s+Engineering$/i, "").trim() ||
+            name,
+          code,
+          sort_order: 100,
+        });
+        if (okEl) {
+          okEl.textContent = `Added “${name}”. It is now in the Programme list.`;
+          okEl.hidden = false;
+        }
+        qs("#programme-form").reset();
+        if (progId) progId.dataset.touched = "";
+        await loadProgrammes();
+        fillDeptSelect(id);
+      } catch (err) {
+        const msg = err?.message || String(err);
+        const needsSql =
+          /relation .*programmes.* does not exist|Could not find the table|schema cache/i.test(msg);
+        setError(
+          "prog-error",
+          needsSql
+            ? "Programmes table missing. Run supabase/schema_programmes.sql once in the Supabase SQL Editor."
+            : msg || "Could not add programme."
+        );
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Add programme"; }
+      }
+    });
+
+    qs("#programmes-tbody")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-action='delete-programme']");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      const name = btn.getAttribute("data-name") || id;
+      if (!id) return;
+      if (!confirm(`Remove programme “${name}”? Existing materials keep their department id.`)) return;
+      try {
+        await EBBApi.deleteProgramme(id);
+        await loadProgrammes();
+        fillDeptSelect();
+      } catch (err) {
+        alert(err.message || "Delete failed");
+      }
+    });
+
+    qs("#upload-form")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError("upload-error", "");
+      const okEl = qs("#upload-ok");
+      if (okEl) { okEl.hidden = true; okEl.textContent = ""; }
+
+      const title = qs("#up-title")?.value?.trim();
+      const description = qs("#up-desc")?.value?.trim() || null;
+      const course_code = qs("#up-code")?.value?.trim() || null;
+      const department = qs("#up-dept")?.value || null;
+      const level = qs("#up-level")?.value || null;
+      const material_type = qs("#up-type")?.value || "shared";
+      const published = !!qs("#up-published")?.checked;
+      const file = qs("#up-file")?.files?.[0];
+
+      if (!title) { setError("upload-error", "Title is required."); return; }
+      if (!file) { setError("upload-error", "Choose a file."); return; }
+      if (!EBBApi.isAllowedFile(file)) {
+        setError("upload-error", "File type not allowed. Use PDF, PPT/PPTX, DOC/DOCX, TXT, or MD.");
+        return;
+      }
+
+      const btn = qs("#upload-submit");
+      const prog = qs("#upload-progress");
+      const progBar = qs("#upload-progress-bar");
+      const progLab = qs("#upload-progress-label");
+      const setUploadProgress = (ratio, label) => {
+        if (prog) prog.hidden = false;
+        if (progBar) progBar.style.width = `${Math.round(Math.max(0, Math.min(1, ratio)) * 100)}%`;
+        if (progLab) progLab.textContent = label || "";
+        if (btn) btn.textContent = label && /%/.test(label) ? "Uploading…" : btn.textContent;
+      };
+      const resetUploadProgress = () => {
+        if (prog) prog.hidden = true;
+        if (progBar) progBar.style.width = "0%";
+        if (progLab) progLab.textContent = "";
+      };
+      if (btn) { btn.disabled = true; btn.textContent = "Uploading…"; }
+      resetUploadProgress();
+      setUploadProgress(0.02, "Starting…");
+
+      try {
+        const { data: userData } = await sb.auth.getUser();
+        const uid = userData?.user?.id || null;
+        const { data: sess } = await sb.auth.getSession();
+        const accessToken = sess?.session?.access_token || null;
+
+        let path;
+        let source = "storage";
+        let publicUrl = null;
+
+        if (window.EBBR2 && accessToken) {
+          try {
+            const up = await EBBR2.uploadFile(file, {
+              prefix: "uploads",
+              accessToken,
+              onProgress: (ratio, label) => setUploadProgress(ratio, label),
+            });
+            path = up.key;
+            source = "r2";
+            publicUrl = up.publicUrl;
+          } catch (r2err) {
+            if (r2err && r2err.code === "r2_not_configured") {
+              console.warn("[admin] R2 not configured, using Supabase Storage");
+            } else {
+              throw r2err;
+            }
+          }
+        }
+
+        if (!path) {
+          setUploadProgress(0.5, "Uploading to storage…");
+          const safeName = file.name.replace(/[^\w.\-()+ ]+/g, "_");
+          path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+          const { error: upErr } = await sb.storage
+            .from("materials")
+            .upload(path, file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: file.type || undefined,
+            });
+          if (upErr) throw upErr;
+          source = "storage";
+        }
+
+        setUploadProgress(0.97, "Saving catalog…");
+        const { error: insErr } = await sb.from("materials").insert({
+          title,
+          description,
+          course_code,
+          department,
+          level,
+          material_type,
+          file_path: path,
+          file_name: file.name,
+          mime_type: file.type || null,
+          file_size: file.size,
+          published,
+          source,
+          download_url: publicUrl,
+          external_url: publicUrl,
+          uploaded_by: uid,
+        });
+        if (insErr) {
+          try {
+            if (source === "r2" && window.EBBR2 && accessToken) {
+              await EBBR2.deleteObject(path, accessToken);
+            } else {
+              await sb.storage.from("materials").remove([path]);
+            }
+          } catch (_) {}
+          throw insErr;
+        }
+
+        setUploadProgress(1, "Done · " + (window.EBBR2 ? EBBR2.formatBytes(file.size) : ""));
+        if (okEl) {
+          okEl.textContent = "Uploaded successfully.";
+          okEl.hidden = false;
+        }
+        qs("#upload-form").reset();
+        if (qs("#up-published")) qs("#up-published").checked = true;
+        await refreshAll();
+        setTimeout(resetUploadProgress, 1200);
+      } catch (err) {
+        resetUploadProgress();
+        setError("upload-error", err.message || "Upload failed");
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Upload"; }
+      }
+    });
+
+    qs("#materials-tbody")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      const action = btn.getAttribute("data-action");
+      if (!id || !action) return;
+
+      try {
+        if (action === "toggle") {
+          const published = btn.getAttribute("data-published") === "true";
+          const { error } = await sb.from("materials").update({ published: !published }).eq("id", id);
+          if (error) throw error;
+          await refreshAll();
+        } else if (action === "delete") {
+          if (!confirm("Delete this material and its file?")) return;
+          const path = btn.getAttribute("data-path");
+          const source = btn.getAttribute("data-source") || "";
+          const { data: sess } = await sb.auth.getSession();
+          const accessToken = sess?.session?.access_token || null;
+          const { error } = await sb.from("materials").delete().eq("id", id);
+          if (error) throw error;
+          if (path) {
+            try {
+              if (source === "r2" && window.EBBR2 && accessToken) {
+                await EBBR2.deleteObject(path, accessToken);
+              } else if (!String(path).startsWith("materials/")) {
+                await sb.storage.from("materials").remove([path]);
+              }
+            } catch (_) {}
+          }
+          await refreshAll();
+        } else if (action === "open") {
+          const path = btn.getAttribute("data-path");
+          const ext = btn.getAttribute("data-external") || "";
+          const source = btn.getAttribute("data-source") || "";
+          const url = EBBApi.getFileUrl({
+            file_path: path,
+            external_url: ext,
+            download_url: ext,
+            source: source || (String(path || "").startsWith("materials/") ? "github" : "storage"),
+          }) || EBBApi.getPublicFileUrl(path);
+          if (url) window.open(url, "_blank", "noopener");
+        }
+      } catch (err) {
+        alert(err.message || "Action failed");
+      }
+    });
+
+    async function refreshAll() {
+      await Promise.all([loadProgrammes(), loadStats(), loadMaterials()]);
+    }
+
+    async function loadProgrammes() {
+      const tbody = qs("#programmes-tbody");
+      try {
+        const rows = await EBBApi.listProgrammes();
+        if (window.EBB) EBB.applyProgrammes(rows);
+        fillDeptSelect();
+        if (!tbody) return;
+        const list = window.EBB ? EBB.departments : [];
+        if (!list.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="admin-muted">No programmes yet.</td></tr>`;
+          return;
+        }
+        const builtinIds = new Set(
+          (EBB._builtinDepartments || []).map((d) => d.id)
+        );
+        tbody.innerHTML = list.map((d) => {
+          const canRemove = !builtinIds.has(d.id);
+          return `
+          <tr>
+            <td data-label="Name"><strong>${escapeHtml(d.name)}</strong></td>
+            <td data-label="Code">${escapeHtml(d.code || "—")}</td>
+            <td data-label="Id"><code>${escapeHtml(d.id)}</code></td>
+            <td class="admin-row-actions" data-label="Actions">
+              ${canRemove
+                ? `<button type="button" class="btn btn-ghost btn-sm admin-danger" data-action="delete-programme" data-id="${escapeHtml(d.id)}" data-name="${escapeHtml(d.name)}">Remove</button>`
+                : `<span class="admin-muted">built-in</span>`}
+            </td>
+          </tr>`;
+        }).join("");
+      } catch (err) {
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" class="admin-error">${escapeHtml(err.message || "Failed to load programmes")}</td></tr>`;
+        }
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const { data, error } = await sb.rpc("admin_stats");
+        if (error) throw error;
+        qs("#stat-visits").textContent = String(data?.visits ?? 0);
+        qs("#stat-downloads").textContent = String(data?.downloads ?? 0);
+        qs("#stat-shares").textContent = String(data?.shares ?? 0);
+        qs("#stat-materials").textContent = String(data?.materials ?? 0);
+      } catch (err) {
+        // Fallback: compute from materials + page_views count if RPC missing
+        console.warn("[admin] admin_stats:", err.message || err);
+        try {
+          const mats = await EBBApi.listAllMaterials();
+          qs("#stat-materials").textContent = String(mats.length);
+          qs("#stat-downloads").textContent = String(mats.reduce((s, m) => s + (m.download_count || 0), 0));
+          qs("#stat-shares").textContent = String(mats.reduce((s, m) => s + (m.share_count || 0), 0));
+          const { count } = await sb.from("page_views").select("*", { count: "exact", head: true });
+          qs("#stat-visits").textContent = String(count ?? "—");
+        } catch (_) {
+          qs("#stat-visits").textContent = "—";
+        }
+      }
+    }
+
+    async function loadMaterials() {
+      const tbody = qs("#materials-tbody");
+      if (!tbody) return;
+      try {
+        const rows = await EBBApi.listAllMaterials();
+        if (!rows.length) {
+          tbody.innerHTML = `<tr><td colspan="7" class="admin-muted">No materials yet. Upload one above.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = rows.map((m) => {
+          const inbox = String(m.file_path || "").startsWith("inbox/");
+          const statusLabel = m.published
+            ? "Published"
+            : inbox
+              ? "Inbox"
+              : "Hidden";
+          return `
+          <tr${inbox && !m.published ? ' class="admin-inbox-row"' : ""}>
+            <td data-label="Title">
+              <strong>${escapeHtml(m.title)}</strong>
+              <div class="admin-muted">${escapeHtml(m.file_name || "")}${inbox ? " · forms inbox" : ""}</div>
+            </td>
+            <td data-label="Course">${escapeHtml(m.course_code || "—")}</td>
+            <td data-label="Type">${escapeHtml(m.material_type || "—")}</td>
+            <td data-label="Downloads">${m.download_count || 0}</td>
+            <td data-label="Shares">${m.share_count || 0}</td>
+            <td data-label="Status">
+              <button type="button" class="btn btn-ghost btn-sm"
+                data-action="toggle" data-id="${m.id}" data-published="${m.published ? "true" : "false"}">
+                ${statusLabel}
+              </button>
+            </td>
+            <td class="admin-row-actions" data-label="Actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-action="open" data-id="${m.id}" data-path="${escapeHtml(m.file_path)}" data-source="${escapeHtml(m.source || "")}" data-external="${escapeHtml(m.external_url || m.download_url || "")}">Open</button>
+              <button type="button" class="btn btn-ghost btn-sm admin-danger" data-action="delete" data-id="${m.id}" data-path="${escapeHtml(m.file_path)}" data-source="${escapeHtml(m.source || "")}">Delete</button>
+            </td>
+          </tr>`;
+        }).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="admin-error">${escapeHtml(err.message || "Failed to load")}</td></tr>`;
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    boot().catch((err) => {
+      console.error(err);
+      const panel = qs("#panel-setup");
+      if (panel) {
+        panel.hidden = false;
+        const lead = panel.querySelector(".admin-lead");
+        if (lead) lead.textContent = "Could not start admin: " + (err.message || err);
+      }
+    });
+  });
+})();
