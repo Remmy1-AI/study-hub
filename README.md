@@ -53,6 +53,22 @@ python3 -m http.server 3847 --bind 127.0.0.1
 
 ## R2 (optional, for Admin uploads)
 
-Set on Vercel: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_BASE_URL`.
+Set on Vercel / Cursor app secrets:
+
+| Variable | Purpose |
+|----------|---------|
+| `R2_ACCOUNT_ID` | Cloudflare account |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 API token |
+| `R2_BUCKET_NAME` | Bucket |
+| `R2_PUBLIC_BASE_URL` | Usually `/api/r2-file` |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | Server-side Auth checks for R2 routes |
+| `ADMIN_EMAILS` | Comma-separated Admin allowlist (required for upload/delete/inbox) |
+
+Security notes (v1):
+
+- `uploads/` files are readable for the public catalog
+- `inbox/` is Admin-only (Bearer or short-lived ticket)
+- Presign / put / delete require a signed-in Admin on `ADMIN_EMAILS`
+- Anonymous form uploads are deferred until a later phase
 
 Inspired by [KB’S BRAIN BANK / boye.study](https://boye.study) and the Coursebook Framer template look.

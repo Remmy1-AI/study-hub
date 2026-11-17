@@ -79,7 +79,9 @@ create policy "anon_select_published_materials"
   to anon, authenticated
   using (published = true);
 
--- Authenticated owner: full CRUD (solo admin — any signed-in user)
+-- Authenticated catalog writes.
+-- Operational rule: create ONLY the owner Admin Auth user in this project.
+-- R2 mutating routes additionally require ADMIN_EMAILS on the server.
 drop policy if exists "auth_select_all_materials" on public.materials;
 create policy "auth_select_all_materials"
   on public.materials for select

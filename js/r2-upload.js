@@ -39,7 +39,7 @@
         fileName: file.name,
         contentType: file.type || "application/octet-stream",
         size: file.size,
-        prefix: prefix || "inbox",
+        prefix: prefix || "uploads",
       }),
     });
     const data = await res.json().catch(() => ({}));

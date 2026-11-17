@@ -1,11 +1,14 @@
-/* Same-origin R2 upload proxy — browser never needs bucket CORS.
+/* Same-origin R2 upload proxy — admin auth required; browser never needs bucket CORS.
    Node runtime (60s) so large PDFs can finish assembling. */
 import {
   abortStagedUpload,
+  corsHeaders,
+  isManagedR2Key,
   newUploadId,
   partStagingKey,
   putObject,
   r2Env,
+  requireAdmin,
   stitchParts,
   verifyUploadTicket,
   verifySupabaseUser,
@@ -20,24 +23,13 @@ export const config = {
 
 const MAX_PART = 3.5 * 1024 * 1024;
 
-function allowKey(key, user) {
-  const k = String(key || "").replace(/^\/+/, "");
-  if (!k || k.includes("..")) return false;
-  if (user) return k.startsWith("inbox/") || k.startsWith("uploads/");
-  return k.startsWith("inbox/");
+function setCors(req, res) {
+  const headers = corsHeaders(req);
+  Object.entries(headers).forEach(([k, v]) => res.setHeader(k, v));
 }
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Authorization, Content-Type, X-EBB-Key, X-EBB-Ticket, X-EBB-Content-Type"
-  );
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-}
-
-function send(res, status, data) {
-  setCors(res);
+function send(req, res, status, data) {
+  setCors(req, res);
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify(data));
@@ -53,18 +45,22 @@ function readBody(req) {
 }
 
 export default async function handler(req, res) {
-  setCors(res);
+  setCors(req, res);
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.end();
     return;
   }
-  if (req.method !== "POST") return send(res, 405, { error: "Method not allowed" });
+  if (req.method !== "POST") return send(req, res, 405, { error: "Method not allowed" });
 
   const env = r2Env();
   if (!env.configured) {
-    return send(res, 503, { error: "R2 is not configured", code: "r2_not_configured" });
+    return send(req, res, 503, { error: "R2 is not configured", code: "r2_not_configured" });
   }
+
+  const user = await verifySupabaseUser(req.headers.authorization || "");
+  const gate = requireAdmin(user);
+  if (!gate.ok) return send(req, res, gate.status, { error: gate.error, code: gate.code });
 
   const url = new URL(req.url || "/", "http://localhost");
   const action = String(url.searchParams.get("action") || "put").toLowerCase();
@@ -78,28 +74,27 @@ export default async function handler(req, res) {
     req.headers["x-ebb-content-type"] ||
     "application/octet-stream";
 
-  const user = await verifySupabaseUser(req.headers.authorization || "");
-  if (!allowKey(key, user)) return send(res, 403, { error: "Invalid key" });
+  if (!isManagedR2Key(key)) return send(req, res, 403, { error: "Invalid key" });
   if (!(await verifyUploadTicket(ticket, key))) {
-    return send(res, 403, { error: "Upload ticket expired or invalid. Request a new slot." });
+    return send(req, res, 403, { error: "Upload ticket expired or invalid. Request a new slot." });
   }
 
   try {
     if (action === "init") {
-      return send(res, 200, { ok: true, key, uploadId: newUploadId() });
+      return send(req, res, 200, { ok: true, key, uploadId: newUploadId() });
     }
 
     if (action === "part") {
       const uploadId = String(url.searchParams.get("uploadId") || "");
       const partNumber = Number(url.searchParams.get("partNumber") || 0);
       if (!uploadId || !Number.isInteger(partNumber) || partNumber < 1 || partNumber > 64) {
-        return send(res, 400, { error: "uploadId and partNumber required" });
+        return send(req, res, 400, { error: "uploadId and partNumber required" });
       }
       const body = await readBody(req);
-      if (!body.byteLength) return send(res, 400, { error: "Empty part" });
-      if (body.byteLength > MAX_PART) return send(res, 413, { error: "Part too large" });
+      if (!body.byteLength) return send(req, res, 400, { error: "Empty part" });
+      if (body.byteLength > MAX_PART) return send(req, res, 413, { error: "Part too large" });
       await putObject(partStagingKey(key, uploadId, partNumber), body, "application/octet-stream");
-      return send(res, 200, { ok: true, partNumber, bytes: body.byteLength });
+      return send(req, res, 200, { ok: true, partNumber, bytes: body.byteLength });
     }
 
     if (action === "complete") {
@@ -115,23 +110,23 @@ export default async function handler(req, res) {
         } catch (_) {}
       }
       if (!uploadId || !Number.isInteger(partCount) || partCount < 1 || partCount > 64) {
-        return send(res, 400, { error: "uploadId and partCount required" });
+        return send(req, res, 400, { error: "uploadId and partCount required" });
       }
       await stitchParts(key, uploadId, partCount, ct);
-      return send(res, 200, { ok: true, key });
+      return send(req, res, 200, { ok: true, key });
     }
 
     if (action === "abort") {
       const uploadId = String(url.searchParams.get("uploadId") || "");
       const partCount = Number(url.searchParams.get("partCount") || 32);
       if (uploadId) await abortStagedUpload(key, uploadId, partCount);
-      return send(res, 200, { ok: true });
+      return send(req, res, 200, { ok: true });
     }
 
     const body = await readBody(req);
-    if (!body.byteLength) return send(res, 400, { error: "Empty body" });
+    if (!body.byteLength) return send(req, res, 400, { error: "Empty body" });
     if (body.byteLength > MAX_PART) {
-      return send(res, 413, {
+      return send(req, res, 413, {
         error: "File too large for single put — use multipart",
         code: "use_multipart",
       });
@@ -144,9 +139,9 @@ export default async function handler(req, res) {
         : req.headers["content-type"]) ||
       "application/octet-stream";
     await putObject(key, body, ct);
-    return send(res, 200, { ok: true, key, bytes: body.byteLength });
+    return send(req, res, 200, { ok: true, key, bytes: body.byteLength });
   } catch (err) {
     console.error("[r2-put]", err);
-    return send(res, 500, { error: err.message || "Upload failed" });
+    return send(req, res, 500, { error: err.message || "Upload failed" });
   }
 }

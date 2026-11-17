@@ -614,13 +614,20 @@
       const items = [];
       data.courses.slice(0, 6).forEach((c) => {
         const dept = EBB.getDepartment(c.department);
-        items.push(`<a href="./course.html?id=${c.id}" role="option"><span class="sr-code">${c.code}</span>${c.name}<span class="sr-meta">${dept ? dept.name : ""} · Level ${c.level}</span></a>`);
+        items.push(
+          `<a href="./course.html?id=${encodeURIComponent(c.id)}" role="option"><span class="sr-code">${escapeAttr(c.code)}</span>${escapeAttr(c.name)}<span class="sr-meta">${escapeAttr(dept ? dept.name : "")} · Level ${escapeAttr(c.level)}</span></a>`
+        );
       });
       data.materials.slice(0, 6).forEach((m) => {
         const c = EBB.getCourse(m.courseId);
-        items.push(`<a href="./course.html?id=${m.courseId}" role="option"><span class="sr-code">${c ? c.code : ""}</span>${m.title}<span class="sr-meta">${m.topic} · ${EBB.getTypeMeta(m.type)?.name || m.type}</span></a>`);
+        const typeName = EBB.getTypeMeta(m.type)?.name || m.type;
+        items.push(
+          `<a href="./course.html?id=${encodeURIComponent(m.courseId)}" role="option"><span class="sr-code">${escapeAttr(c ? c.code : "")}</span>${escapeAttr(m.title)}<span class="sr-meta">${escapeAttr(m.topic)} · ${escapeAttr(typeName)}</span></a>`
+        );
       });
-      results.innerHTML = items.length ? items.join("") : `<div class="sr-empty">No results for “${q}”</div>`;
+      results.innerHTML = items.length
+        ? items.join("")
+        : `<div class="sr-empty">No results for “${escapeAttr(q)}”</div>`;
       results.classList.add("open");
     }
 
@@ -689,10 +696,10 @@
       };
       const depts = EBB.departments.filter((d) => d.count > 0);
       deptGrid.innerHTML = (depts.length ? depts : EBB.departments).map((d) => `
-        <a class="dept-card" href="./courses.html?dept=${d.id}">
-          <span class="dept-badge">${d.count}</span>
-          <h3>${d.name}</h3>
-          <p>${blurbs[d.id] || "Browse courses and materials."}</p>
+        <a class="dept-card" href="./courses.html?dept=${encodeURIComponent(d.id)}">
+          <span class="dept-badge">${escapeAttr(d.count)}</span>
+          <h3>${escapeAttr(d.name)}</h3>
+          <p>${escapeAttr(blurbs[d.id] || "Browse courses and materials.")}</p>
         </a>`).join("");
     }
 

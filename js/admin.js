@@ -403,12 +403,29 @@
           const path = btn.getAttribute("data-path");
           const ext = btn.getAttribute("data-external") || "";
           const source = btn.getAttribute("data-source") || "";
-          const url = EBBApi.getFileUrl({
+          let url = EBBApi.getFileUrl({
             file_path: path,
             external_url: ext,
             download_url: ext,
             source: source || (String(path || "").startsWith("materials/") ? "github" : "storage"),
           }) || EBBApi.getPublicFileUrl(path);
+          // Inbox objects need a short-lived ticket (not world-readable).
+          if (url && String(path || "").startsWith("inbox/")) {
+            const { data: sess } = await sb.auth.getSession();
+            const accessToken = sess?.session?.access_token || null;
+            if (!accessToken) throw new Error("Sign in required to open inbox files");
+            const tres = await fetch("/api/r2-read-ticket", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + accessToken,
+              },
+              body: JSON.stringify({ key: path }),
+            });
+            const tdata = await tres.json().catch(() => ({}));
+            if (!tres.ok) throw new Error(tdata.error || "Could not open inbox file");
+            url = `/api/r2-file?key=${encodeURIComponent(path)}&ticket=${encodeURIComponent(tdata.ticket)}`;
+          }
           if (url) window.open(url, "_blank", "noopener");
         }
       } catch (err) {
