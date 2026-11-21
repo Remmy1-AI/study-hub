@@ -6,7 +6,7 @@ import { colors, typography } from '@/constants/theme';
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <FloatingTabBar {...(props as object)} />}
       screenOptions={{
         headerStyle: { backgroundColor: colors.paper },
         headerTintColor: colors.forest,
