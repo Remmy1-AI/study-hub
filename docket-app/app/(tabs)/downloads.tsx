@@ -1,10 +1,26 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Dimensions,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { EmptyState, ListRow, Meta, Subtitle } from '@/components/ui';
-import { colors, spacing, typography } from '@/constants/theme';
+import {
+  COURSES,
+  getCourse,
+  getResource,
+  RESOURCE_TYPE_LABEL,
+  RESOURCES,
+  type Resource,
+} from '@/constants/catalog';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
   listDownloads,
@@ -12,18 +28,60 @@ import {
   type DownloadedItem,
 } from '@/lib/downloads';
 
+const CONTENT_GAP = 40;
+
+type DownloadRow = {
+  resourceId: string;
+  title: string;
+  typeLabel: string;
+  courseCode: string;
+  sizeLabel: string;
+  isSample: boolean;
+};
+
+function enrich(item: DownloadedItem): DownloadRow {
+  const resource = getResource(item.resourceId);
+  const course = resource ? getCourse(resource.courseId) : undefined;
+  return {
+    resourceId: item.resourceId,
+    title: item.title,
+    typeLabel: resource ? RESOURCE_TYPE_LABEL[resource.type] : 'Resource',
+    courseCode: course?.code ?? '—',
+    sizeLabel: item.sizeLabel,
+    isSample: false,
+  };
+}
+
+function sampleRows(): DownloadRow[] {
+  return RESOURCES.slice(0, 4).map((r: Resource) => {
+    const course = COURSES.find((c) => c.id === r.courseId);
+    return {
+      resourceId: r.id,
+      title: r.title,
+      typeLabel: RESOURCE_TYPE_LABEL[r.type],
+      courseCode: course?.code ?? '—',
+      sizeLabel: r.sizeLabel,
+      isSample: true,
+    };
+  });
+}
+
 /**
- * Downloads — first-class offline destination (Google offline cues):
- * size, open viewer, remove. Gated behind phone OTP.
+ * Downloads — sticky ~20% forest hero (no search), offline list with open/remove.
+ * Shows sample rows for demo when the device queue is empty.
  */
 export default function DownloadsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const [items, setItems] = useState<DownloadedItem[]>([]);
+  const [stored, setStored] = useState<DownloadedItem[]>([]);
   const [gateOpen, setGateOpen] = useState(false);
 
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
+  const stickyStackH = heroHeight;
+
   const load = useCallback(async () => {
-    setItems(await listDownloads());
+    setStored(await listDownloads());
   }, []);
 
   useFocusEffect(
@@ -32,60 +90,124 @@ export default function DownloadsScreen() {
     }, [load]),
   );
 
-  if (!user) {
-    return (
-      <View style={styles.screen}>
-        <View style={styles.intro}>
-          <Subtitle>Keep files on device for offline study.</Subtitle>
-        </View>
-        <EmptyState
-          title="Sign in to manage downloads"
-          body="Browse is free. Offline downloads and progress sync need phone OTP."
-          actionLabel="Sign in with phone"
-          onAction={() => setGateOpen(true)}
-        />
-        <AuthGateSheet visible={gateOpen} onClose={() => setGateOpen(false)} />
-      </View>
-    );
-  }
+  const rows = useMemo(() => {
+    if (stored.length > 0) return stored.map(enrich);
+    return sampleRows();
+  }, [stored]);
+
+  const showingSamples = stored.length === 0;
 
   return (
     <View style={styles.screen}>
-      <View style={styles.intro}>
-        <Subtitle>Offline files on this device. Open in the viewer or remove to free space.</Subtitle>
-        <Meta>{items.length} downloaded</Meta>
+      <FlatList
+        data={rows}
+        keyExtractor={(item) => item.resourceId}
+        contentContainerStyle={{
+          paddingTop: stickyStackH + CONTENT_GAP,
+          paddingBottom: insets.bottom + 110,
+          paddingHorizontal: spacing.lg,
+        }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          showingSamples ? (
+            <Text style={styles.sampleHint}>
+              Sample offline files for preview — real downloads appear after you save a resource.
+            </Text>
+          ) : (
+            <Text style={styles.countHint}>{stored.length} on this device</Text>
+          )
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Nothing offline yet</Text>
+            <Text style={styles.emptyBody}>
+              From a resource, tap Download to keep a copy on this device.
+            </Text>
+            <Pressable
+              style={styles.emptyBtn}
+              onPress={() => router.push('/(tabs)/libraries')}>
+              <Text style={styles.emptyBtnText}>Browse libraries</Text>
+            </Pressable>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <Pressable
+              style={styles.rowMain}
+              onPress={() => {
+                if (!user && !item.isSample) {
+                  setGateOpen(true);
+                  return;
+                }
+                router.push(`/viewer/${item.resourceId}`);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${item.title}`}>
+              <View style={styles.icon}>
+                <Ionicons name="document-text-outline" size={18} color={colors.forest} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
+                <Text style={styles.rowMeta}>
+                  {item.typeLabel} · {item.courseCode} · {item.sizeLabel}
+                </Text>
+              </View>
+            </Pressable>
+            <View style={styles.actions}>
+              <Pressable
+                onPress={() => {
+                  if (!user && !item.isSample) {
+                    setGateOpen(true);
+                    return;
+                  }
+                  router.push(`/viewer/${item.resourceId}`);
+                }}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="Open">
+                <Text style={styles.open}>Open</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (item.isSample) return;
+                  if (!user) {
+                    setGateOpen(true);
+                    return;
+                  }
+                  void removeDownload(item.resourceId).then(load);
+                }}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="Remove"
+                style={{ opacity: item.isSample ? 0.35 : 1 }}>
+                <Text style={styles.remove}>Remove</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      />
+
+      <View style={styles.sticky} pointerEvents="box-none">
+        <View
+          style={[
+            styles.hero,
+            {
+              height: heroHeight,
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.lg,
+            },
+          ]}>
+          <Text style={styles.eyebrow}>Offline on this device</Text>
+          <Text style={styles.title}>Downloads</Text>
+          <Text style={styles.subtitle}>
+            Keep slides and notes for study without data.
+          </Text>
+        </View>
       </View>
-      {items.length === 0 ? (
-        <EmptyState
-          title="Nothing offline yet"
-          body="From a resource, tap Download to save a copy here."
-          actionLabel="Browse libraries"
-          onAction={() => router.push('/(tabs)/libraries')}
-        />
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.resourceId}
-          renderItem={({ item }) => (
-            <ListRow
-              title={item.title}
-              subtitle={item.sizeLabel}
-              meta={`Saved ${new Date(item.savedAt).toLocaleDateString()}`}
-              onPress={() => router.push(`/viewer/${item.resourceId}`)}
-              right={
-                <Pressable
-                  onPress={() => {
-                    void removeDownload(item.resourceId).then(load);
-                  }}
-                  hitSlop={8}
-                  accessibilityRole="button">
-                  <Text style={styles.remove}>Remove</Text>
-                </Pressable>
-              }
-            />
-          )}
-        />
-      )}
+
+      <AuthGateSheet visible={gateOpen} onClose={() => setGateOpen(false)} />
     </View>
   );
 }
@@ -95,16 +217,129 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
   },
-  intro: {
+  sticky: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  hero: {
+    backgroundColor: colors.forest,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: 6,
+    justifyContent: 'flex-end',
+    gap: 4,
+  },
+  eyebrow: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 13,
+    color: 'rgba(243, 240, 230, 0.82)',
+  },
+  title: {
+    fontFamily: typography.display,
+    fontSize: 26,
+    color: colors.paper,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontFamily: typography.body,
+    fontSize: 14,
+    color: 'rgba(243, 240, 230, 0.78)',
+    lineHeight: 20,
+    marginTop: 2,
+  },
+  sampleHint: {
+    fontFamily: typography.body,
+    fontSize: 13,
+    color: colors.muted,
+    marginBottom: spacing.md,
+    lineHeight: 18,
+  },
+  countHint: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 13,
+    color: colors.forest,
+    marginBottom: spacing.md,
+  },
+  row: {
+    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: spacing.md,
+    marginBottom: 10,
+    gap: 10,
+  },
+  rowMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.forestSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowBody: {
+    flex: 1,
+    gap: 3,
+  },
+  rowTitle: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 15,
+    color: colors.ink,
+  },
+  rowMeta: {
+    fontFamily: typography.body,
+    fontSize: 12,
+    color: colors.dim,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 16,
+  },
+  open: {
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+    color: colors.forest,
   },
   remove: {
     fontFamily: typography.bodyMedium,
     fontSize: 13,
     color: colors.danger,
-    paddingHorizontal: 8,
+  },
+  empty: {
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    fontFamily: typography.bodyBold,
+    fontSize: 18,
+    color: colors.ink,
+  },
+  emptyBody: {
+    fontFamily: typography.body,
+    fontSize: 15,
+    color: colors.muted,
+    lineHeight: 22,
+  },
+  emptyBtn: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    backgroundColor: colors.forest,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+  },
+  emptyBtnText: {
+    fontFamily: typography.bodyBold,
+    fontSize: 14,
+    color: colors.paper,
   },
 });

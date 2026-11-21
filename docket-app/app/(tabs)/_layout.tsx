@@ -43,6 +43,7 @@ export default function TabLayout() {
         name="downloads"
         options={{
           title: 'Downloads',
+          headerShown: false,
         }}
       />
       <Tabs.Screen
