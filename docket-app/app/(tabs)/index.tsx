@@ -1,81 +1,188 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  Dimensions,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Meta, SectionLabel, Subtitle, Title } from '@/components/ui';
-import { COURSES, PROGRAMMES, RESOURCES } from '@/constants/catalog';
+import { Meta, SectionLabel } from '@/components/ui';
+import {
+  COURSES,
+  getCoursesForProgramme,
+  PROGRAMMES,
+  RESOURCE_TYPE_LABEL,
+  RESOURCES,
+} from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
+import { useAuth } from '@/lib/auth';
+
+function greetingForHour(hour: number) {
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function displayNameFromUser(phone: string | undefined) {
+  if (!phone) return 'there';
+  // No profile name yet — show a short phone-friendly label.
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length >= 4) return `··${digits.slice(-4)}`;
+  return phone;
+}
 
 /**
- * Home — resume-first (Lumen cue): one continue strip + short recent row;
- * calm first viewport, shortcuts into Libraries.
+ * Home — locked vision:
+ * top colored sheet (~30%) · greeting + avatar · overlapping search ·
+ * horizontal course/department carousel · trending materials list.
  */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const continueResource = RESOURCES[0];
-  const continueCourse = COURSES.find((c) => c.id === continueResource.courseId);
-  const recent = RESOURCES.slice(0, 4);
+  const { user } = useAuth();
+  const [query, setQuery] = useState('');
+
+  const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
+  const name = displayNameFromUser(user?.phone);
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.3);
+
+  /** Carousel: programmes with sample courses first, then remaining departments. */
+  const carouselItems = useMemo(() => {
+    const withCourses = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length > 0);
+    const rest = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length === 0).slice(0, 8);
+    return [...withCourses, ...rest];
+  }, []);
+
+  const trending = RESOURCES.slice(0, 6);
+
+  function onSearchSubmit() {
+    const q = query.trim();
+    if (!q) {
+      router.push('/(tabs)/libraries');
+      return;
+    }
+    router.push('/(tabs)/libraries');
+  }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
-      <View style={styles.heroCopy}>
-        <Meta>UMAT study</Meta>
-        <Title>Continue where you left off</Title>
-        <Subtitle>Browse free. Sign in when you download or save progress.</Subtitle>
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [styles.resumeCard, pressed && styles.pressed]}
-        onPress={() => router.push(`/resource/${continueResource.id}`)}>
-        <SectionLabel>Continue reading</SectionLabel>
-        <Text style={styles.resumeTitle}>{continueResource.title}</Text>
-        <Meta>
-          {continueCourse?.code} · {continueCourse?.title}
-        </Meta>
-      </Pressable>
-
-      <View style={styles.section}>
-        <SectionLabel>Recent</SectionLabel>
-        {recent.map((r) => {
-          const course = COURSES.find((c) => c.id === r.courseId);
-          return (
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {/* Hero sheet — flush top, bottom corners only */}
+        <View
+          style={[
+            styles.hero,
+            {
+              minHeight: heroHeight,
+              paddingTop: insets.top + spacing.md,
+              paddingBottom: spacing.xl + 28,
+            },
+          ]}>
+          <View style={styles.heroRow}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.greeting}>{greeting}</Text>
+              <Text style={styles.name} numberOfLines={1}>
+                {name}
+              </Text>
+            </View>
             <Pressable
-              key={r.id}
-              style={({ pressed }) => [styles.recentRow, pressed && styles.pressed]}
-              onPress={() => router.push(`/resource/${r.id}`)}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.recentTitle}>{r.title}</Text>
-                <Meta>{course?.code}</Meta>
-              </View>
-              <Text style={styles.chev}>›</Text>
+              accessibilityRole="button"
+              accessibilityLabel="Open profile"
+              onPress={() => router.push('/(tabs)/profile')}
+              style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
+              <Ionicons name="person" size={22} color={colors.forest} />
             </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={styles.section}>
-        <SectionLabel>Browse programmes</SectionLabel>
-        <Body style={styles.hint}>Full UMAT catalogue — same spine as Ace on the web.</Body>
-        <View style={styles.chips}>
-          {PROGRAMMES.slice(0, 6).map((p) => (
-            <Pressable
-              key={p.id}
-              style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-              onPress={() => router.push(`/(tabs)/libraries/programme/${p.id}`)}>
-              <Text style={styles.chipText}>{p.short}</Text>
-            </Pressable>
-          ))}
-          <Pressable
-            style={({ pressed }) => [styles.chip, styles.chipAll, pressed && styles.pressed]}
-            onPress={() => router.push('/(tabs)/libraries')}>
-            <Text style={[styles.chipText, styles.chipAllText]}>All libraries</Text>
-          </Pressable>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Search overlaps hero bottom edge into next section */}
+        <View style={styles.searchWrap}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={colors.dim} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search courses & resources"
+              placeholderTextColor={colors.dim}
+              returnKeyType="search"
+              onSubmitEditing={onSearchSubmit}
+              style={styles.searchInput}
+              accessibilityLabel="Search"
+            />
+          </View>
+        </View>
+
+        <View style={styles.body}>
+          <SectionLabel>Courses & departments</SectionLabel>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.courseRow}
+            decelerationRate="fast">
+            {carouselItems.map((programme) => {
+              const count = getCoursesForProgramme(programme.id).length;
+              return (
+                <Pressable
+                  key={programme.id}
+                  style={({ pressed }) => [styles.courseCard, pressed && styles.pressed]}
+                  onPress={() => router.push(`/(tabs)/libraries/programme/${programme.id}`)}>
+                  <Text style={styles.courseCode}>{programme.code}</Text>
+                  <Text style={styles.courseTitle} numberOfLines={2}>
+                    {programme.short}
+                  </Text>
+                  <Meta>{count > 0 ? `${count} course${count === 1 ? '' : 's'}` : 'Browse'}</Meta>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              style={({ pressed }) => [
+                styles.courseCard,
+                styles.courseCardMore,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => router.push('/(tabs)/libraries')}>
+              <Text style={styles.courseTitle}>All libraries</Text>
+              <Meta>Full catalogue</Meta>
+            </Pressable>
+          </ScrollView>
+
+          <View style={styles.activityHeader}>
+            <SectionLabel>Trending learning materials</SectionLabel>
+          </View>
+          {trending.map((r) => {
+            const course = COURSES.find((c) => c.id === r.courseId);
+            return (
+              <Pressable
+                key={r.id}
+                style={({ pressed }) => [styles.activityRow, pressed && styles.pressed]}
+                onPress={() => router.push(`/resource/${r.id}`)}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="flame-outline" size={18} color={colors.forest} />
+                </View>
+                <View style={styles.activityBody}>
+                  <Text style={styles.activityTitle} numberOfLines={2}>
+                    {r.title}
+                  </Text>
+                  <Meta>
+                    {RESOURCE_TYPE_LABEL[r.type]} · {course?.code} · {r.sizeLabel}
+                  </Meta>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.dim} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -84,71 +191,137 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
   },
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
+  scroll: {
+    flex: 1,
+  },
+  hero: {
+    backgroundColor: colors.forest,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    paddingHorizontal: spacing.lg,
+    justifyContent: 'flex-end',
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   heroCopy: {
-    gap: spacing.sm,
+    flex: 1,
+    gap: 4,
   },
-  resumeCard: {
-    backgroundColor: colors.forest,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: 6,
+  greeting: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 14,
+    color: 'rgba(243, 240, 230, 0.82)',
   },
-  resumeTitle: {
-    fontFamily: typography.bodyBold,
-    fontSize: 18,
+  name: {
+    fontFamily: typography.display,
+    fontSize: 32,
     color: colors.paper,
+    letterSpacing: -0.4,
   },
-  section: {
-    gap: spacing.sm,
+  avatarBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.paper,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  recentRow: {
+  searchWrap: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -22,
+    zIndex: 2,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    shadowColor: colors.forestDeep,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: typography.body,
+    fontSize: 15,
+    color: colors.ink,
+    paddingVertical: 0,
+  },
+  body: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  courseRow: {
+    gap: 12,
+    paddingBottom: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  courseCard: {
+    width: 148,
+    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  courseCardMore: {
+    backgroundColor: colors.forestSoft,
+    justifyContent: 'center',
+  },
+  courseCode: {
+    fontFamily: typography.bodyBold,
+    fontSize: 12,
+    color: colors.ochre,
+    letterSpacing: 0.4,
+  },
+  courseTitle: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 15,
+    color: colors.ink,
+    minHeight: 40,
+  },
+  activityHeader: {
+    marginTop: spacing.md,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
-  recentTitle: {
+  activityIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.forestSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityBody: {
+    flex: 1,
+    gap: 2,
+  },
+  activityTitle: {
     fontFamily: typography.bodyMedium,
     fontSize: 15,
     color: colors.ink,
   },
-  chev: {
-    fontSize: 22,
-    color: colors.dim,
-    paddingLeft: spacing.sm,
-  },
-  hint: {
-    color: colors.muted,
-    marginBottom: spacing.xs,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: colors.forestSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radii.sm,
-  },
-  chipText: {
-    fontFamily: typography.bodyMedium,
-    fontSize: 13,
-    color: colors.forest,
-  },
-  chipAll: {
-    backgroundColor: colors.ochreSoft,
-  },
-  chipAllText: {
-    color: colors.forestDeep,
-  },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
 });
