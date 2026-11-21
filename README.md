@@ -37,6 +37,11 @@ Static HTML / CSS / vanilla JS on **Vercel**.
 - Fonts: Cormorant Garamond (display) · Inter (UI) · DM Mono (labels)
 - Programmes: Electrical, Mechanical, Petroleum, Mining, Geology, Geomatics, Logistics and Transport, Computer Science, Data Science, Robotics and AI, Cyber Security, Information Systems, Environmental and Safety, Land Administration, Telecommunication, Spatial Planning, Minerals
 
+## Mobile (Docket)
+
+Android-first Expo student app lives in **`docket-app/`** (does not replace this static site).  
+See [`docket-app/README.md`](docket-app/README.md) for local Android run + mock phone OTP.
+
 ## Local preview
 
 ```bash
