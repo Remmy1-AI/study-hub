@@ -50,6 +50,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerShown: false,
         }}
       />
     </Tabs>

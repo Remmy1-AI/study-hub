@@ -33,7 +33,7 @@ export function AuthGateSheet({
   onSignedIn,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { sendOtp, verifyOtp, mockMode } = useAuth();
+  const { sendOtp, verifyOtp } = useAuth();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -87,9 +87,6 @@ export function AuthGateSheet({
           </Pressable>
         </View>
         <Body style={styles.benefit}>{benefitLine}</Body>
-        {mockMode ? (
-          <Meta style={styles.mockHint}>Mock mode — any phone, code 123456</Meta>
-        ) : null}
 
         {step === 'phone' ? (
           <>
@@ -166,9 +163,6 @@ const styles = StyleSheet.create({
   },
   benefit: {
     color: colors.muted,
-  },
-  mockHint: {
-    color: colors.ochre,
   },
   label: {
     fontFamily: typography.bodyMedium,

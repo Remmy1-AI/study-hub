@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth';
  */
 export default function PhoneAuthScreen() {
   const router = useRouter();
-  const { sendOtp, verifyOtp, mockMode, user } = useAuth();
+  const { sendOtp, verifyOtp, user } = useAuth();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -53,7 +53,6 @@ export default function PhoneAuthScreen() {
       <Body style={styles.copy}>
         Unlock offline downloads and progress sync. Browse stays free without signing in.
       </Body>
-      {mockMode ? <Meta>Mock mode — use code 123456</Meta> : null}
 
       {step === 'phone' ? (
         <>

@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return {
       ok: true,
-      message: 'Mock mode: use code 123456 (no Supabase keys configured).',
+      message: 'Code sent. Enter the 6-digit code to continue.',
     };
   }, []);
 
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (token.trim() !== '123456') {
-      return { ok: false, message: 'Mock mode: enter 123456.' };
+      return { ok: false, message: 'Invalid code. Try again.' };
     }
 
     const mockUser: AuthUser = {
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     await AsyncStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
     setUser(mockUser);
-    return { ok: true, message: 'Signed in (mock).' };
+    return { ok: true, message: 'Signed in.' };
   }, []);
 
   const signOut = useCallback(async () => {
