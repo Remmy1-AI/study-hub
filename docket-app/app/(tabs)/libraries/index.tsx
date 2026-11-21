@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
+  Dimensions,
   FlatList,
   Pressable,
   StyleSheet,
@@ -14,14 +15,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCoursesForProgramme, PROGRAMMES, type Programme } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 
+const SEARCH_OVERLAP = 18;
+const SEARCH_BAR_H = 46;
+
 /**
- * Libraries — flat cream 2-column programme tiles (not a twin of Home’s green hero).
- * Sticky mini header + search; floating glass nav stays from tab layout.
+ * Libraries — Home-matched sticky ~22% forest hero + overlapping search;
+ * 2-column programme tiles scroll underneath. Floating glass nav from tabs.
  */
 export default function LibrariesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.22);
+  const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
 
   const programmes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -35,35 +42,19 @@ export default function LibrariesScreen() {
   }, [query]);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.stickyHeader}>
-        <Text style={styles.title}>Libraries</Text>
-        <Text style={styles.subtitle}>Browse by programme — preview free, download after sign-in.</Text>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={colors.dim} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search programmes"
-            placeholderTextColor={colors.dim}
-            style={styles.searchInput}
-            accessibilityLabel="Search programmes"
-            returnKeyType="search"
-          />
-          {query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
-              <Ionicons name="close-circle" size={18} color={colors.dim} />
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
-
+    <View style={styles.screen}>
       <FlatList
         data={programmes}
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
-        contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 110 }]}
+        contentContainerStyle={[
+          styles.grid,
+          {
+            paddingTop: stickyStackH + spacing.md,
+            paddingBottom: insets.bottom + 110,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
@@ -76,6 +67,44 @@ export default function LibrariesScreen() {
           />
         )}
       />
+
+      {/* Sticky hero + overlapping search — content scrolls underneath */}
+      <View style={styles.sticky} pointerEvents="box-none">
+        <View
+          style={[
+            styles.hero,
+            {
+              height: heroHeight,
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.lg + 10,
+            },
+          ]}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.eyebrow}>UMAT catalogue</Text>
+            <Text style={styles.title}>Libraries</Text>
+          </View>
+        </View>
+
+        <View style={[styles.searchWrap, { marginTop: -SEARCH_OVERLAP }]}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={colors.dim} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search programmes"
+              placeholderTextColor={colors.dim}
+              style={styles.searchInput}
+              accessibilityLabel="Search programmes"
+              returnKeyType="search"
+            />
+            {query.length > 0 ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+                <Ionicons name="close-circle" size={18} color={colors.dim} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -110,39 +139,53 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.paper,
   },
-  stickyHeader: {
-    backgroundColor: colors.paper,
+  sticky: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+  },
+  hero: {
+    backgroundColor: colors.forest,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
-    zIndex: 5,
-    gap: 6,
+    justifyContent: 'flex-end',
+  },
+  heroCopy: {
+    gap: 4,
+  },
+  eyebrow: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 14,
+    color: 'rgba(243, 240, 230, 0.82)',
   },
   title: {
     fontFamily: typography.display,
-    fontSize: 28,
-    color: colors.ink,
-    letterSpacing: -0.3,
+    fontSize: 26,
+    color: colors.paper,
+    letterSpacing: -0.4,
   },
-  subtitle: {
-    fontFamily: typography.body,
-    fontSize: 14,
-    color: colors.muted,
-    lineHeight: 20,
-    marginBottom: 4,
+  searchWrap: {
+    paddingHorizontal: spacing.lg,
+    zIndex: 2,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    height: SEARCH_BAR_H,
     backgroundColor: colors.card,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: 11,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
+    shadowColor: colors.forestDeep,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
@@ -153,7 +196,6 @@ const styles = StyleSheet.create({
   },
   grid: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
   },
   row: {
     gap: 12,
