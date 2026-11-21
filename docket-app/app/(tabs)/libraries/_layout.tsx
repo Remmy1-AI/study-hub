@@ -15,7 +15,7 @@ export default function LibrariesLayout() {
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.paper },
       }}>
-      <Stack.Screen name="index" options={{ title: 'Libraries' }} />
+      <Stack.Screen name="index" options={{ title: 'Libraries', headerShown: false }} />
       <Stack.Screen name="programme/[programmeId]" options={{ title: 'Programme' }} />
       <Stack.Screen name="course/[courseId]" options={{ title: 'Course' }} />
     </Stack>
