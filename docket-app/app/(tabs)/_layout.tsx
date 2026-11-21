@@ -6,7 +6,9 @@ import { colors, typography } from '@/constants/theme';
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <FloatingTabBar {...(props as object)} />}
+      // Expo Router tabBar prop shape differs slightly from RN Navigation types.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tabBar={(props: any) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerStyle: { backgroundColor: colors.paper },
         headerTintColor: colors.forest,
