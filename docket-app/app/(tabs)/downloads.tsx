@@ -147,10 +147,10 @@ export default function DownloadsScreen() {
                 <Ionicons name="document-text-outline" size={18} color={colors.forest} />
               </View>
               <View style={styles.rowBody}>
-                <Text style={styles.rowTitle} numberOfLines={2}>
+                <Text style={styles.rowTitle} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <Text style={styles.rowMeta}>
+                <Text style={styles.rowMeta} numberOfLines={1}>
                   {item.typeLabel} · {item.courseCode} · {item.sizeLabel}
                 </Text>
               </View>
@@ -164,10 +164,11 @@ export default function DownloadsScreen() {
                   }
                   router.push(`/viewer/${item.resourceId}`);
                 }}
-                hitSlop={6}
+                hitSlop={10}
                 accessibilityRole="button"
-                accessibilityLabel="Open">
-                <Text style={styles.open}>Open</Text>
+                accessibilityLabel="Open"
+                style={styles.actionBtn}>
+                <Ionicons name="open-outline" size={20} color={colors.forest} />
               </Pressable>
               <Pressable
                 onPress={() => {
@@ -178,11 +179,11 @@ export default function DownloadsScreen() {
                   }
                   void removeDownload(item.resourceId).then(load);
                 }}
-                hitSlop={6}
+                hitSlop={10}
                 accessibilityRole="button"
-                accessibilityLabel="Remove"
-                style={{ opacity: item.isSample ? 0.35 : 1 }}>
-                <Text style={styles.remove}>Remove</Text>
+                accessibilityLabel="Delete"
+                style={[styles.actionBtn, { opacity: item.isSample ? 0.35 : 1 }]}>
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </Pressable>
             </View>
           </View>
@@ -264,18 +265,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   row: {
-    backgroundColor: colors.card,
-    borderRadius: radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-    padding: spacing.md,
-    marginBottom: 10,
-    gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+    gap: 8,
   },
   rowMain: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minWidth: 0,
   },
   icon: {
     width: 36,
@@ -284,10 +286,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.forestSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   rowBody: {
     flex: 1,
-    gap: 3,
+    minWidth: 0,
+    gap: 2,
+    paddingRight: 4,
   },
   rowTitle: {
     fontFamily: typography.bodyMedium,
@@ -301,18 +306,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 16,
+    alignItems: 'center',
+    flexShrink: 0,
+    gap: 2,
   },
-  open: {
-    fontFamily: typography.bodyBold,
-    fontSize: 13,
-    color: colors.forest,
-  },
-  remove: {
-    fontFamily: typography.bodyMedium,
-    fontSize: 13,
-    color: colors.danger,
+  actionBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   empty: {
     paddingVertical: spacing.xl,
