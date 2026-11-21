@@ -31,16 +31,16 @@ function greetingForHour(hour: number) {
 
 function displayNameFromUser(phone: string | undefined) {
   if (!phone) return 'there';
-  // No profile name yet — show a short phone-friendly label.
   const digits = phone.replace(/\D/g, '');
   if (digits.length >= 4) return `··${digits.slice(-4)}`;
   return phone;
 }
 
+const SEARCH_OVERLAP = 18;
+const SEARCH_BAR_H = 46;
+
 /**
- * Home — locked vision:
- * top colored sheet (~30%) · greeting + avatar · overlapping search ·
- * horizontal course/department carousel · trending materials list.
+ * Home — sticky forest hero + search; carousel/trending scroll underneath.
  */
 export default function HomeScreen() {
   const router = useRouter();
@@ -50,13 +50,10 @@ export default function HomeScreen() {
 
   const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
   const name = displayNameFromUser(user?.phone);
-  // ~18–20% of screen, capped near 160pt + safe area so carousel stays above the fold.
-  const heroHeight = Math.min(
-    Math.round(Dimensions.get('window').height * 0.19),
-    160 + insets.top,
-  );
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.22);
+  // Sticky stack height includes search that hangs below the sheet.
+  const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
 
-  /** Carousel: programmes with sample courses first, then remaining departments. */
   const carouselItems = useMemo(() => {
     const withCourses = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length > 0);
     const rest = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length === 0).slice(0, 8);
@@ -66,65 +63,20 @@ export default function HomeScreen() {
   const trending = RESOURCES.slice(0, 6);
 
   function onSearchSubmit() {
-    const q = query.trim();
-    if (!q) {
-      router.push('/(tabs)/libraries');
-      return;
-    }
     router.push('/(tabs)/libraries');
   }
 
   return (
     <View style={styles.screen}>
+      {/* Content scrolls under the sticky hero */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+        contentContainerStyle={{
+          paddingTop: stickyStackH + spacing.md,
+          paddingBottom: insets.bottom + 100,
+        }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {/* Hero sheet — flush top, bottom corners only */}
-        <View
-          style={[
-            styles.hero,
-            {
-              height: heroHeight,
-              paddingTop: insets.top + spacing.sm,
-              paddingBottom: spacing.lg + 10,
-            },
-          ]}>
-          <View style={styles.heroRow}>
-            <View style={styles.heroCopy}>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.name} numberOfLines={1}>
-                {name}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open profile"
-              onPress={() => router.push('/(tabs)/profile')}
-              style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
-              <Ionicons name="person" size={20} color={colors.forest} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Search overlaps hero bottom edge into next section */}
-        <View style={styles.searchWrap}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={colors.dim} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search courses & resources"
-              placeholderTextColor={colors.dim}
-              returnKeyType="search"
-              onSubmitEditing={onSearchSubmit}
-              style={styles.searchInput}
-              accessibilityLabel="Search"
-            />
-          </View>
-        </View>
-
         <View style={styles.body}>
           <SectionLabel>Courses & departments</SectionLabel>
           <ScrollView
@@ -186,6 +138,51 @@ export default function HomeScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Fixed hero + overlapping search — never scrolls away */}
+      <View style={styles.sticky} pointerEvents="box-none">
+        <View
+          style={[
+            styles.hero,
+            {
+              height: heroHeight,
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.lg + 10,
+            },
+          ]}>
+          <View style={styles.heroRow}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.greeting}>{greeting}</Text>
+              <Text style={styles.name} numberOfLines={1}>
+                {name}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open profile"
+              onPress={() => router.push('/(tabs)/profile')}
+              style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
+              <Ionicons name="person" size={20} color={colors.forest} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={[styles.searchWrap, { marginTop: -SEARCH_OVERLAP }]}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={colors.dim} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search courses & resources"
+              placeholderTextColor={colors.dim}
+              returnKeyType="search"
+              onSubmitEditing={onSearchSubmit}
+              style={styles.searchInput}
+              accessibilityLabel="Search"
+            />
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -197,6 +194,13 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  sticky: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
   },
   hero: {
     backgroundColor: colors.forest,
@@ -236,17 +240,16 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     paddingHorizontal: spacing.lg,
-    marginTop: -18,
     zIndex: 2,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    height: SEARCH_BAR_H,
     backgroundColor: colors.card,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
     shadowColor: colors.forestDeep,
@@ -264,7 +267,6 @@ const styles = StyleSheet.create({
   },
   body: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     gap: spacing.sm,
   },
   courseRow: {

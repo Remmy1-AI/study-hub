@@ -1,12 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
 
+import { FloatingTabBar } from '@/components/FloatingTabBar';
 import { colors, typography } from '@/constants/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerStyle: { backgroundColor: colors.paper },
         headerTintColor: colors.forest,
@@ -15,18 +15,12 @@ export default function TabLayout() {
           color: colors.ink,
         },
         headerShadowVisible: false,
-        tabBarActiveTintColor: colors.forest,
-        tabBarInactiveTintColor: colors.dim,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopColor: colors.line,
-          height: Platform.OS === 'android' ? 64 : 84,
-          paddingBottom: Platform.OS === 'android' ? 10 : 24,
-          paddingTop: 8,
-        },
-        tabBarLabelStyle: {
-          fontFamily: typography.bodyMedium,
-          fontSize: 11,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
         },
       }}>
       <Tabs.Screen
@@ -34,9 +28,6 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color as string} />
-          ),
         }}
       />
       <Tabs.Screen
@@ -44,27 +35,18 @@ export default function TabLayout() {
         options={{
           title: 'Libraries',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="library-outline" size={size} color={color as string} />
-          ),
         }}
       />
       <Tabs.Screen
         name="downloads"
         options={{
           title: 'Downloads',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="download-outline" size={size} color={color as string} />
-          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color as string} />
-          ),
         }}
       />
     </Tabs>
