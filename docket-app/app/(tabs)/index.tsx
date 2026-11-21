@@ -50,7 +50,11 @@ export default function HomeScreen() {
 
   const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
   const name = displayNameFromUser(user?.phone);
-  const heroHeight = Math.round(Dimensions.get('window').height * 0.3);
+  // ~18–20% of screen, capped near 160pt + safe area so carousel stays above the fold.
+  const heroHeight = Math.min(
+    Math.round(Dimensions.get('window').height * 0.19),
+    160 + insets.top,
+  );
 
   /** Carousel: programmes with sample courses first, then remaining departments. */
   const carouselItems = useMemo(() => {
@@ -82,9 +86,9 @@ export default function HomeScreen() {
           style={[
             styles.hero,
             {
-              minHeight: heroHeight,
-              paddingTop: insets.top + spacing.md,
-              paddingBottom: spacing.xl + 28,
+              height: heroHeight,
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.lg + 10,
             },
           ]}>
           <View style={styles.heroRow}>
@@ -99,7 +103,7 @@ export default function HomeScreen() {
               accessibilityLabel="Open profile"
               onPress={() => router.push('/(tabs)/profile')}
               style={({ pressed }) => [styles.avatarBtn, pressed && styles.pressed]}>
-              <Ionicons name="person" size={22} color={colors.forest} />
+              <Ionicons name="person" size={20} color={colors.forest} />
             </Pressable>
           </View>
         </View>
@@ -218,21 +222,21 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: typography.display,
-    fontSize: 32,
+    fontSize: 26,
     color: colors.paper,
     letterSpacing: -0.4,
   },
   avatarBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.paper,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchWrap: {
     paddingHorizontal: spacing.lg,
-    marginTop: -22,
+    marginTop: -18,
     zIndex: 2,
   },
   searchBar: {
