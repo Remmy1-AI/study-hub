@@ -23,7 +23,7 @@ export default function PhoneAuthScreen() {
     return (
       <View style={styles.screen}>
         <Title>Already signed in</Title>
-        <Body>{user.phone}</Body>
+        <Body>{user.name?.trim() || user.phone}</Body>
         <PrimaryButton label="Back to profile" onPress={() => router.back()} />
       </View>
     );

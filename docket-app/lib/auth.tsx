@@ -15,22 +15,33 @@ const MOCK_SESSION_KEY = 'docket.mock.session';
 export type AuthUser = {
   id: string;
   phone: string;
+  name?: string;
+  programmeId?: string;
+};
+
+export type SignupProfile = {
+  name: string;
+  programmeId: string;
+  phone: string;
 };
 
 type AuthContextValue = {
   user: AuthUser | null;
   loading: boolean;
   mockMode: boolean;
-  /** Browse is always free; download + progress need a session. */
   requireAuthForAction: (action: 'download' | 'progress') => boolean;
   sendOtp: (phone: string) => Promise<{ ok: boolean; message: string }>;
-  verifyOtp: (phone: string, token: string) => Promise<{ ok: boolean; message: string }>;
+  verifyOtp: (
+    phone: string,
+    token: string,
+    profile?: { name?: string; programmeId?: string },
+  ) => Promise<{ ok: boolean; message: string }>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function normalizePhone(phone: string) {
+export function normalizePhone(phone: string) {
   const trimmed = phone.trim().replace(/\s+/g, '');
   if (!trimmed) return '';
   if (trimmed.startsWith('+')) return trimmed;
@@ -55,16 +66,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data } = await supabase.auth.getSession();
           const sessionUser = data.session?.user;
           if (!cancelled && sessionUser) {
+            const meta = sessionUser.user_metadata ?? {};
             setUser({
               id: sessionUser.id,
               phone: sessionUser.phone ?? sessionUser.email ?? 'signed-in',
+              name: typeof meta.name === 'string' ? meta.name : undefined,
+              programmeId:
+                typeof meta.programmeId === 'string' ? meta.programmeId : undefined,
             });
           }
           const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user) {
+              const meta = session.user.user_metadata ?? {};
               setUser({
                 id: session.user.id,
                 phone: session.user.phone ?? session.user.email ?? 'signed-in',
+                name: typeof meta.name === 'string' ? meta.name : undefined,
+                programmeId:
+                  typeof meta.programmeId === 'string' ? meta.programmeId : undefined,
               });
             } else {
               setUser(null);
@@ -108,41 +127,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const verifyOtp = useCallback(async (phone: string, token: string) => {
-    const normalized = normalizePhone(phone);
-    if (!normalized || !token.trim()) {
-      return { ok: false, message: 'Phone and code are required.' };
-    }
-
-    if (supabase) {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: normalized,
-        token: token.trim(),
-        type: 'sms',
-      });
-      if (error) return { ok: false, message: error.message };
-      const sessionUser = data.user;
-      if (sessionUser) {
-        setUser({
-          id: sessionUser.id,
-          phone: sessionUser.phone ?? normalized,
-        });
+  const verifyOtp = useCallback(
+    async (
+      phone: string,
+      token: string,
+      profile?: { name?: string; programmeId?: string },
+    ) => {
+      const normalized = normalizePhone(phone);
+      if (!normalized || !token.trim()) {
+        return { ok: false, message: 'Phone and code are required.' };
       }
+
+      if (supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          phone: normalized,
+          token: token.trim(),
+          type: 'sms',
+        });
+        if (error) return { ok: false, message: error.message };
+        const sessionUser = data.user;
+        if (sessionUser) {
+          if (profile?.name || profile?.programmeId) {
+            await supabase.auth.updateUser({
+              data: {
+                name: profile.name,
+                programmeId: profile.programmeId,
+              },
+            });
+          }
+          setUser({
+            id: sessionUser.id,
+            phone: sessionUser.phone ?? normalized,
+            name: profile?.name,
+            programmeId: profile?.programmeId,
+          });
+        }
+        return { ok: true, message: 'Signed in.' };
+      }
+
+      if (token.trim() !== '123456') {
+        return { ok: false, message: 'Invalid code. Try again.' };
+      }
+
+      const mockUser: AuthUser = {
+        id: `mock-${normalized}`,
+        phone: normalized,
+        name: profile?.name?.trim() || undefined,
+        programmeId: profile?.programmeId,
+      };
+      await AsyncStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
+      setUser(mockUser);
       return { ok: true, message: 'Signed in.' };
-    }
-
-    if (token.trim() !== '123456') {
-      return { ok: false, message: 'Invalid code. Try again.' };
-    }
-
-    const mockUser: AuthUser = {
-      id: `mock-${normalized}`,
-      phone: normalized,
-    };
-    await AsyncStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
-    setUser(mockUser);
-    return { ok: true, message: 'Signed in.' };
-  }, []);
+    },
+    [],
+  );
 
   const signOut = useCallback(async () => {
     if (supabase) {

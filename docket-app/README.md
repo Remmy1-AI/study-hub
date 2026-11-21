@@ -15,16 +15,16 @@ Student-facing companion to the Ace static site in this repo. Admin uploads stay
 
 | Screen | Route |
 |--------|--------|
-| Splash | `/` — *Docket* mid; *by Mr. Yeboah* bottom |
-| Home | `/(tabs)` — continue + recent |
+| Splash auth | `/` — *Docket* mid + *by Mr. Yeboah*; shrinks into phone OTP / Sign up |
+| Home | `/(tabs)` — greeting + **name**, carousel, trending |
 | Libraries | `/(tabs)/libraries` → programme → course → resources |
 | Resource | `/resource/[resourceId]` — preview, open viewer, download |
 | Viewer | `/viewer/[resourceId]` — page-first stub |
 | Downloads | `/(tabs)/downloads` — offline list (OTP gated) |
-| Profile | `/(tabs)/profile` — sign in / out |
+| Profile | `/(tabs)/profile` — **name** hero, programme, settings |
 | Phone OTP | `/auth/phone` (+ auth gate sheet on download) |
 
-Browse is free. **Download** and **progress** require sign-in.
+Browse is free. **Download** and **progress** require sign-in. Splash **Sign up** collects name + programme + phone, then OTP → Home.
 
 ## Local Android run
 
@@ -49,9 +49,9 @@ npx expo start
 
 If `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing or still placeholders:
 
-1. Open Profile → **Sign in with phone** (or trigger Download).
-2. Enter any phone number → Send code.
-3. Enter **`123456`**.
+1. On splash, enter phone → Continue, or **Sign up** (name, programme, number).
+2. Enter OTP **`123456`** (mock only; not shown in UI).
+3. Land on Home with your name in the hero.
 
 ### Real Supabase OTP
 

@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Meta, SectionLabel } from '@/components/ui';
 import {
   COURSES,
+  PROGRAMMES,
   RESOURCE_TYPE_LABEL,
   RESOURCES,
 } from '@/constants/catalog';
@@ -30,14 +31,14 @@ const COMMUNITY_URL = 'https://mryeboah.study';
 const SHARE_MESSAGE =
   'Study with Docket — UMAT resources by Mr. Yeboah. https://mryeboah.study';
 
-function displayLabel(phone: string) {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length >= 4) return `··${digits.slice(-4)}`;
-  return phone;
+function profileDisplayName(user: { name?: string; phone: string }) {
+  const name = user.name?.trim();
+  if (name) return name;
+  return 'Student';
 }
 
 /**
- * Profile — sticky ~20% hero; signed-in: avatar+phone in hero,
+ * Profile — sticky ~20% hero; signed-in: avatar+name in hero,
  * Continue learning carousel, flat settings (no bookmarks/FAQ).
  */
 export default function ProfileScreen() {
@@ -166,8 +167,17 @@ export default function ProfileScreen() {
               <FlatRow
                 icon="school-outline"
                 label="Programme"
-                value="Electrical · EE"
-                onPress={() => router.push('/(tabs)/libraries/programme/electrical')}
+                value={(() => {
+                  const p =
+                    PROGRAMMES.find((x) => x.id === user.programmeId) ??
+                    PROGRAMMES.find((x) => x.id === 'electrical')!;
+                  return `${p.short} · ${p.code}`;
+                })()}
+                onPress={() =>
+                  router.push(
+                    `/(tabs)/libraries/programme/${user.programmeId ?? 'electrical'}`,
+                  )
+                }
               />
               <FlatRow
                 icon="folder-outline"
@@ -226,7 +236,7 @@ export default function ProfileScreen() {
               <View style={styles.heroCopy}>
                 <Text style={styles.eyebrow}>Signed in</Text>
                 <Text style={styles.heroName} numberOfLines={1}>
-                  {displayLabel(user.phone)}
+                  {profileDisplayName(user)}
                 </Text>
                 <Text style={styles.heroPhone} numberOfLines={1}>
                   {user.phone}

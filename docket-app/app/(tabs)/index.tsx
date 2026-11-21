@@ -29,11 +29,10 @@ function greetingForHour(hour: number) {
   return 'Good evening';
 }
 
-function displayNameFromUser(phone: string | undefined) {
-  if (!phone) return 'there';
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length >= 4) return `··${digits.slice(-4)}`;
-  return phone;
+function displayNameFromUser(user: { name?: string; phone?: string } | null | undefined) {
+  const name = user?.name?.trim();
+  if (name) return name.split(/\s+/)[0] ?? name;
+  return 'there';
 }
 
 const SEARCH_OVERLAP = 18;
@@ -51,7 +50,7 @@ export default function HomeScreen() {
   const [query, setQuery] = useState('');
 
   const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
-  const name = displayNameFromUser(user?.phone);
+  const name = displayNameFromUser(user);
   const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
   // Sticky stack height includes search that hangs below the sheet.
   const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
