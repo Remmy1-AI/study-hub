@@ -17,6 +17,8 @@ import { colors, radii, spacing, typography } from '@/constants/theme';
 
 const SEARCH_OVERLAP = 18;
 const SEARCH_BAR_H = 46;
+/** Gap below overlapping search so first tiles are fully visible at rest. */
+const CONTENT_GAP = 28;
 
 /**
  * Libraries — Home-matched sticky ~22% forest hero + overlapping search;
@@ -27,7 +29,7 @@ export default function LibrariesScreen() {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
-  const heroHeight = Math.round(Dimensions.get('window').height * 0.22);
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
   const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
 
   const programmes = useMemo(() => {
@@ -51,7 +53,7 @@ export default function LibrariesScreen() {
         contentContainerStyle={[
           styles.grid,
           {
-            paddingTop: stickyStackH + spacing.md,
+            paddingTop: stickyStackH + CONTENT_GAP,
             paddingBottom: insets.bottom + 110,
           },
         ]}

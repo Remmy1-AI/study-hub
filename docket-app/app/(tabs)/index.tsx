@@ -38,6 +38,8 @@ function displayNameFromUser(phone: string | undefined) {
 
 const SEARCH_OVERLAP = 18;
 const SEARCH_BAR_H = 46;
+/** Gap below overlapping search so first content is fully visible at rest. */
+const CONTENT_GAP = 28;
 
 /**
  * Home — sticky forest hero + search; carousel/trending scroll underneath.
@@ -50,7 +52,7 @@ export default function HomeScreen() {
 
   const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
   const name = displayNameFromUser(user?.phone);
-  const heroHeight = Math.round(Dimensions.get('window').height * 0.22);
+  const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
   // Sticky stack height includes search that hangs below the sheet.
   const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
 
@@ -72,7 +74,7 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingTop: stickyStackH + spacing.md,
+          paddingTop: stickyStackH + CONTENT_GAP,
           paddingBottom: insets.bottom + 100,
         }}
         keyboardShouldPersistTaps="handled"
