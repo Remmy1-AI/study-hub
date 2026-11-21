@@ -18,7 +18,7 @@ import { colors, radii, spacing, typography } from '@/constants/theme';
 const SEARCH_OVERLAP = 18;
 const SEARCH_BAR_H = 46;
 /** Gap below overlapping search so first tiles are fully visible at rest. */
-const CONTENT_GAP = 28;
+const CONTENT_GAP = 40;
 
 /**
  * Libraries — Home-matched sticky ~22% forest hero + overlapping search;

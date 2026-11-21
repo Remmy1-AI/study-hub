@@ -39,7 +39,7 @@ function displayNameFromUser(phone: string | undefined) {
 const SEARCH_OVERLAP = 18;
 const SEARCH_BAR_H = 46;
 /** Gap below overlapping search so first content is fully visible at rest. */
-const CONTENT_GAP = 28;
+const CONTENT_GAP = 40;
 
 /**
  * Home — sticky forest hero + search; carousel/trending scroll underneath.
