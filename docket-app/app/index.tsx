@@ -43,8 +43,11 @@ export default function SplashAuthScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [signupMode, setSignupMode] = useState(false);
+  const [mainH, setMainH] = useState(0);
+  const [contentH, setContentH] = useState(0);
 
   const progress = useSharedValue(0);
+  const centerWhenFits = contentH > 0 && mainH > 0 && contentH <= mainH + 1;
 
   useEffect(() => {
     if (loading) return;
@@ -159,9 +162,24 @@ export default function SplashAuthScreen() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.inner, { paddingTop: insets.top }]}>
-        {/* Flex-grow region above byline — content group is centered here */}
-        <View style={styles.main}>
-          <View style={styles.centerBlock}>
+        {/* Region above byline: centers when short, scrolls from top when tall */}
+        <ScrollView
+          style={styles.main}
+          contentContainerStyle={[
+            styles.mainContent,
+            centerWhenFits ? styles.mainContentCentered : styles.mainContentScroll,
+          ]}
+          onLayout={(e) => setMainH(e.nativeEvent.layout.height)}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={phase === 'signup'}
+          bounces={phase === 'signup'}>
+          <View
+            style={styles.centerBlock}
+            onLayout={(e) => {
+              // Track the auth block itself so centering compares block vs viewport,
+              // not the padded content container (which includes flexGrow space).
+              setContentH(e.nativeEvent.layout.height);
+            }}>
             <Animated.Text style={[styles.wordmark, brandStyle]}>Docket</Animated.Text>
 
             <Animated.View
@@ -222,12 +240,7 @@ export default function SplashAuthScreen() {
                 />
 
                 <Text style={styles.label}>Programme</Text>
-                <ScrollView
-                  style={styles.programmeScroll}
-                  contentContainerStyle={styles.programmeGrid}
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled">
+                <View style={styles.programmeGrid}>
                   {PROGRAMMES.map((p) => {
                     const active = programmeId === p.id;
                     return (
@@ -241,7 +254,7 @@ export default function SplashAuthScreen() {
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </View>
 
                 <Text style={styles.label}>Phone</Text>
                 <TextInput
@@ -323,7 +336,7 @@ export default function SplashAuthScreen() {
             {message ? <Text style={styles.message}>{message}</Text> : null}
             </Animated.View>
           </View>
-        </View>
+        </ScrollView>
 
         {showByline ? (
           <Text style={[styles.byline, { paddingBottom: Math.max(insets.bottom, 16) + 4 }]}>
@@ -343,11 +356,20 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
   },
-  /** Space above the byline — flexbox-centers the auth group */
+  /** Space above the byline — centers when content fits, scrolls when tall */
   main: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  mainContent: {
+    flexGrow: 1,
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  mainContentCentered: {
+    justifyContent: 'center',
+  },
+  mainContentScroll: {
+    justifyContent: 'flex-start',
   },
   centerBlock: {
     width: '100%',
@@ -367,9 +389,6 @@ const styles = StyleSheet.create({
   plane: {
     gap: spacing.sm,
     paddingHorizontal: 4,
-  },
-  programmeScroll: {
-    maxHeight: 100,
   },
   heading: {
     fontFamily: typography.bodyBold,
@@ -400,7 +419,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 8,
+    overflow: 'visible',
   },
   chip: {
     backgroundColor: colors.forestSoft,
