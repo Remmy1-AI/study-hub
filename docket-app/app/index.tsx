@@ -84,14 +84,13 @@ export default function SplashAuthScreen() {
   const brandStyle = useAnimatedStyle(() => {
     const p = progress.value;
     return {
-      marginBottom: interpolate(p, [0, 1], [0, 6]),
-      transform: [{ scale: interpolate(p, [0, 1], [1, 0.58]) }],
+      fontSize: interpolate(p, [0, 1], [48, 28]),
+      marginBottom: interpolate(p, [0, 1], [0, 4]),
     };
   });
 
   const formStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0.35, 1], [0, 1]),
-    transform: [{ translateY: interpolate(progress.value, [0.35, 1], [16, 0]) }],
   }));
 
   function browseAsGuest() {
@@ -159,19 +158,11 @@ export default function SplashAuthScreen() {
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.inner}>
-        <View
-          style={[
-            styles.centerLayer,
-            {
-              paddingTop: insets.top + 8,
-              paddingBottom: insets.bottom + 48,
-            },
-          ]}>
+      <View style={[styles.inner, { paddingTop: insets.top }]}>
+        {/* Flex-grow region above byline — content group is centered here */}
+        <View style={styles.main}>
           <View style={styles.centerBlock}>
-            <Animated.View style={[styles.brandWrap, brandStyle]}>
-              <Text style={styles.wordmark}>Docket</Text>
-            </Animated.View>
+            <Animated.Text style={[styles.wordmark, brandStyle]}>Docket</Animated.Text>
 
             <Animated.View
               style={[styles.formWrap, formStyle]}
@@ -335,7 +326,9 @@ export default function SplashAuthScreen() {
         </View>
 
         {showByline ? (
-          <Text style={[styles.byline, { bottom: insets.bottom + 20 }]}>by Mr. Yeboah</Text>
+          <Text style={[styles.byline, { paddingBottom: Math.max(insets.bottom, 16) + 4 }]}>
+            by Mr. Yeboah
+          </Text>
         ) : null}
       </View>
     </KeyboardAvoidingView>
@@ -350,8 +343,9 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
   },
-  centerLayer: {
-    ...StyleSheet.absoluteFill,
+  /** Space above the byline — flexbox-centers the auth group */
+  main: {
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
@@ -359,19 +353,15 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'stretch',
   },
-  brandWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
   wordmark: {
     fontFamily: typography.display,
     fontSize: 48,
     color: colors.forest,
     letterSpacing: -0.8,
+    textAlign: 'center',
+    alignSelf: 'center',
   },
   formWrap: {
-    zIndex: 1,
     width: '100%',
   },
   plane: {
@@ -475,14 +465,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   byline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
     fontFamily: typography.bodyMedium,
     fontSize: 14,
     color: colors.muted,
     textAlign: 'center',
     letterSpacing: 0.2,
-    zIndex: 3,
+    paddingTop: 8,
   },
 });
