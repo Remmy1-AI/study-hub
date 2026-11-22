@@ -1,18 +1,19 @@
-/** Docket theme — Ace cream / forest / ochre, tuned for mobile. */
+/** Docket theme — Ace cream / deep red / ochre, tuned for mobile. */
 export const colors = {
   paper: '#F3F0E6',
   paperDeep: '#E8E3D4',
   ink: '#1A1A1A',
-  muted: '#5C635C',
-  dim: '#7A827A',
-  forest: '#1F4A36',
-  forestDeep: '#163828',
-  forestSoft: '#D8E2D9',
+  muted: '#5C5656',
+  dim: '#7A7272',
+  /** Brand deep red (primary CTAs, heroes, wordmark, nav active). */
+  forest: '#7A1F1F',
+  forestDeep: '#4A1212',
+  forestSoft: '#EEDFDF',
   ochre: '#C9A227',
   ochreSoft: '#E8D48A',
   card: '#FFFCF4',
-  line: 'rgba(31, 74, 54, 0.14)',
-  danger: '#8B3A2F',
+  line: 'rgba(122, 31, 31, 0.14)',
+  danger: '#A33A2F',
   white: '#FFFFFF',
 } as const;
 

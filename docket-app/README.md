@@ -7,7 +7,7 @@ Student-facing companion to the Ace static site in this repo. Admin uploads stay
 ## Stack
 
 - Expo SDK 58 + **Expo Router** (TypeScript)
-- Theme: Ace cream / forest / ochre (`constants/theme.ts`)
+- Theme: Ace cream / deep red / ochre (`constants/theme.ts`)
 - Auth: **Supabase phone OTP** (mockable without keys)
 - Sample catalogue stubs mirror Ace programmes (`constants/catalog.ts`)
 
@@ -61,7 +61,7 @@ If `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing or s
 
 ## Brand
 
-- Paper `#F3F0E6` · Forest `#1F4A36` · Ochre `#C9A227`
+- Paper `#F3F0E6` · Deep red `#7A1F1F` · Ochre `#C9A227`
 - Display: Libre Baskerville · UI: DM Sans
 
 ## Repo note

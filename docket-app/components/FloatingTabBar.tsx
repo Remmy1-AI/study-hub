@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(31, 74, 54, 0.18)',
+    borderColor: 'rgba(122, 31, 31, 0.18)',
   },
   pillFallback: {
     backgroundColor: 'rgba(255, 252, 244, 0.82)',
