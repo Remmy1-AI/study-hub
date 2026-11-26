@@ -5,10 +5,30 @@
 Study resources for every UMAT student — course slides, notes, past questions, and more.  
 Built for Frank Yeboah (Electrical, UMAT). Closing: **From Frank, for UMAT.**
 
+## Public site and admin (Vercel)
+
+Two standalone Vite projects, each deployed as its own Vercel project:
+
+| Folder | Vercel project | Domain (once DNS is set) | Build | Output |
+|--------|----------------|--------------------------|-------|--------|
+| `website/` | `mryeboah-site` | `mryeboah.study`, `www.mryeboah.study` | `npm run build` | `dist` |
+| `admin/` | `mryeboah-admin` | `admin.mryeboah.study` | `npm run build` | `dist` |
+
+- `website/` — static marketing site in the Docket cream/red look: home (Apps, About, Contact) and `/privacy` (Docket privacy policy). No env vars.
+- `admin/` — content admin for the Yeboah Supabase project Docket reads: programmes, courses and resources (upload to the `materials` bucket, edit, publish/hide, delete). Signs in with Supabase email + password and only opens for users listed in `public.app_admins`.
+  - Build env: `YEBOAH_SUPABASE_URL`, `YEBOAH_SUPABASE_ANON_KEY` (anon/public key only; the build refuses a service-role key).
+  - Grant access: create the user in Supabase Auth (email + password), then
+    `insert into public.app_admins (user_id) values ('<auth user uuid>');`
+    A signed-in non-admin sees their user id on screen to copy.
+
+Local: `cd website && npm install && npm run dev` (same for `admin/`).
+
+The root-level HTML files below are the earlier Ace static site and are not part of these deployments.
+
 ## Live
 
 Domain (when connected): **https://mryeboah.study**  
-Admin: `/admin` (or `https://admin.mryeboah.study` once DNS is set)
+Admin: `https://admin.mryeboah.study` once DNS is set (served from `admin/`)
 
 ## Pages
 

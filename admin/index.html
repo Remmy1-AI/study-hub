@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin · Mr. Yeboah</title>
+  <meta name="theme-color" content="#7A1F1F">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="wordmark" href="/">Mr. Yeboah <span>Admin</span></a>
+      <div class="topbar-right">
+        <span id="whoami" class="whoami" hidden></span>
+        <button id="btn-logout" class="btn btn-ghost btn-sm" type="button" hidden>Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="panel-loading" class="panel center">
+      <p class="muted">Loading…</p>
+    </section>
+
+    <section id="panel-setup" class="panel center" hidden>
+      <div class="card narrow">
+        <h1>Setup needed</h1>
+        <p>This admin was built without Supabase settings. Set <code>YEBOAH_SUPABASE_URL</code> and <code>YEBOAH_SUPABASE_ANON_KEY</code> on the Vercel project, then redeploy.</p>
+      </div>
+    </section>
+
+    <section id="panel-login" class="panel center" hidden>
+      <form id="login-form" class="card narrow" autocomplete="on">
+        <p class="label">Docket content</p>
+        <h1>Sign in</h1>
+        <p class="muted">For Mr. Yeboah and approved admins only.</p>
+        <label class="field">Email
+          <input id="login-email" type="email" autocomplete="username" required>
+        </label>
+        <label class="field">Password
+          <input id="login-password" type="password" autocomplete="current-password" required>
+        </label>
+        <p id="login-error" class="alert error" hidden></p>
+        <button id="login-submit" class="btn btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <section id="panel-denied" class="panel center" hidden>
+      <div class="card narrow">
+        <h1>No admin access</h1>
+        <p>You are signed in, but this account is not on the admin list.</p>
+        <p class="muted">Ask the site owner to add this user id to <code>app_admins</code>:</p>
+        <div class="copy-row">
+          <code id="denied-uid" class="uid"></code>
+          <button id="btn-copy-uid" class="btn btn-ghost btn-sm" type="button">Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-dash" class="panel" hidden>
+      <div class="stats" id="stats">
+        <div class="stat"><span class="stat-label">Resources</span><span class="stat-value" data-stat="materials">–</span></div>
+        <div class="stat"><span class="stat-label">Downloads</span><span class="stat-value" data-stat="downloads">–</span></div>
+        <div class="stat"><span class="stat-label">Shares</span><span class="stat-value" data-stat="shares">–</span></div>
+        <div class="stat"><span class="stat-label">Courses</span><span class="stat-value" data-stat="courses">–</span></div>
+      </div>
+
+      <nav class="tabs" id="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="resources" type="button">Resources</button>
+        <button class="tab" role="tab" data-tab="courses" type="button">Courses</button>
+        <button class="tab" role="tab" data-tab="programmes" type="button">Programmes</button>
+      </nav>
+
+      <p id="dash-error" class="alert error" hidden></p>
+
+      <!-- Resources -->
+      <div data-panel="resources" hidden>
+        <form id="upload-form" class="card">
+          <div class="card-head">
+            <h2>Upload a resource</h2>
+            <p class="muted">PDFs, slides, notes and past papers. Max 50 MB. Shows in Docket when published.</p>
+          </div>
+          <div class="grid">
+            <label class="field">Programme
+              <select id="up-programme" required></select>
+            </label>
+            <label class="field">Course code
+              <input id="up-course" list="up-course-list" placeholder="e.g. EE 201" required>
+              <datalist id="up-course-list"></datalist>
+            </label>
+            <label class="field span-2">Title
+              <input id="up-title" placeholder="e.g. Circuit Theory — Lecture Slides" required>
+            </label>
+            <label class="field">Type
+              <select id="up-type" required></select>
+            </label>
+            <label class="field">Level
+              <select id="up-level"></select>
+            </label>
+            <label class="field span-2"><span>Description <span class="opt">optional</span></span>
+              <textarea id="up-description" rows="2"></textarea>
+            </label>
+            <label class="field span-2">File
+              <input id="up-file" type="file" required>
+            </label>
+            <label class="check span-2">
+              <input id="up-published" type="checkbox" checked> Publish now
+            </label>
+          </div>
+          <div id="upload-progress" class="progress" hidden><div id="upload-progress-bar"></div></div>
+          <p id="upload-error" class="alert error" hidden></p>
+          <p id="upload-ok" class="alert ok" hidden></p>
+          <button id="upload-submit" class="btn btn-primary" type="submit">Upload</button>
+        </form>
+
+        <div class="card">
+          <div class="card-head row">
+            <h2>Resources</h2>
+            <div class="filters">
+              <select id="res-filter-programme" aria-label="Filter by programme"></select>
+              <select id="res-filter-type" aria-label="Filter by type"></select>
+              <input id="res-filter-q" type="search" placeholder="Search title or code" aria-label="Search resources">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Title</th><th>Course</th><th>Type</th><th>Size</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+              <tbody id="res-tbody"></tbody>
+            </table>
+          </div>
+          <p id="res-empty" class="empty" hidden>No resources yet.</p>
+        </div>
+      </div>
+
+      <!-- Courses -->
+      <div data-panel="courses" hidden>
+        <form id="course-form" class="card">
+          <div class="card-head">
+            <h2>Add a course</h2>
+            <p class="muted">Courses group resources inside a programme in Docket.</p>
+          </div>
+          <div class="grid">
+            <label class="field">Programme
+              <select id="co-programme" required></select>
+            </label>
+            <label class="field">Code
+              <input id="co-code" placeholder="e.g. EE 201" required>
+            </label>
+            <label class="field span-2">Title
+              <input id="co-title" placeholder="e.g. Circuit Theory" required>
+            </label>
+            <label class="field">Level
+              <select id="co-level"></select>
+            </label>
+            <label class="field">Semester
+              <select id="co-semester"></select>
+            </label>
+            <label class="field">Sort order
+              <input id="co-sort" type="number" value="100">
+            </label>
+            <label class="check">
+              <input id="co-published" type="checkbox" checked> Published
+            </label>
+          </div>
+          <p id="course-error" class="alert error" hidden></p>
+          <button class="btn btn-primary" type="submit">Add course</button>
+        </form>
+
+        <div class="card">
+          <div class="card-head row">
+            <h2>Courses</h2>
+            <div class="filters">
+              <select id="co-filter-programme" aria-label="Filter by programme"></select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Code</th><th>Title</th><th>Programme</th><th>Level</th><th>Resources</th><th>Status</th><th class="actions-col">Actions</th></tr></thead>
+              <tbody id="co-tbody"></tbody>
+            </table>
+          </div>
+          <p id="co-empty" class="empty" hidden>No courses yet. Docket also lists any course code used on an uploaded resource.</p>
+        </div>
+      </div>
+
+      <!-- Programmes -->
+      <div data-panel="programmes" hidden>
+        <form id="programme-form" class="card">
+          <div class="card-head">
+            <h2>Add a programme</h2>
+            <p class="muted">Programmes are the departments students pick in Docket.</p>
+          </div>
+          <div class="grid">
+            <label class="field span-2">Name
+              <input id="pr-name" placeholder="e.g. Electrical Engineering" required>
+            </label>
+            <label class="field">Id (slug)
+              <input id="pr-id" placeholder="electrical" pattern="[a-z0-9-]+" required>
+            </label>
+            <label class="field">Short name
+              <input id="pr-short" placeholder="Electrical">
+            </label>
+            <label class="field">Code
+              <input id="pr-code" placeholder="EE">
+            </label>
+            <label class="field">Sort order
+              <input id="pr-sort" type="number" value="100">
+            </label>
+          </div>
+          <p id="programme-error" class="alert error" hidden></p>
+          <button class="btn btn-primary" type="submit">Add programme</button>
+        </form>
+
+        <div class="card">
+          <div class="card-head"><h2>Programmes</h2></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Code</th><th>Name</th><th>Id</th><th>Courses</th><th>Resources</th><th>Order</th><th class="actions-col">Actions</th></tr></thead>
+              <tbody id="pr-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="edit-dialog" class="dialog">
+    <form id="edit-form" method="dialog">
+      <h2 id="edit-heading">Edit</h2>
+      <div id="edit-fields" class="grid"></div>
+      <p id="edit-error" class="alert error" hidden></p>
+      <div class="dialog-actions">
+        <button class="btn btn-ghost" type="button" id="edit-cancel">Cancel</button>
+        <button class="btn btn-primary" type="submit" id="edit-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
