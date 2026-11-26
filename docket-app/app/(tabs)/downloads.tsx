@@ -13,20 +13,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import {
-  COURSES,
-  getCourse,
-  getResource,
   RESOURCE_TYPE_LABEL,
-  RESOURCES,
+  type Course,
   type Resource,
 } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 import {
   listDownloads,
   removeDownload,
   type DownloadedItem,
 } from '@/lib/downloads';
+import { forgetDownload } from '@/lib/userData';
 
 const CONTENT_GAP = 40;
 
@@ -39,7 +38,12 @@ type DownloadRow = {
   isSample: boolean;
 };
 
-function enrich(item: DownloadedItem): DownloadRow {
+type CatalogLookup = {
+  getResource: (id: string) => Resource | undefined;
+  getCourse: (id: string) => Course | undefined;
+};
+
+function enrich(item: DownloadedItem, { getResource, getCourse }: CatalogLookup): DownloadRow {
   const resource = getResource(item.resourceId);
   const course = resource ? getCourse(resource.courseId) : undefined;
   return {
@@ -52,9 +56,9 @@ function enrich(item: DownloadedItem): DownloadRow {
   };
 }
 
-function sampleRows(): DownloadRow[] {
-  return RESOURCES.slice(0, 4).map((r: Resource) => {
-    const course = COURSES.find((c) => c.id === r.courseId);
+function sampleRows(resources: Resource[], courses: Course[]): DownloadRow[] {
+  return resources.slice(0, 4).map((r: Resource) => {
+    const course = courses.find((c) => c.id === r.courseId);
     return {
       resourceId: r.id,
       title: r.title,
@@ -74,6 +78,7 @@ export default function DownloadsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const catalog = useCatalog();
   const [stored, setStored] = useState<DownloadedItem[]>([]);
   const [gateOpen, setGateOpen] = useState(false);
 
@@ -91,11 +96,12 @@ export default function DownloadsScreen() {
   );
 
   const rows = useMemo(() => {
-    if (stored.length > 0) return stored.map(enrich);
-    return sampleRows();
-  }, [stored]);
+    if (stored.length > 0) return stored.map((item) => enrich(item, catalog));
+    if (catalog.live) return [];
+    return sampleRows(catalog.resources, catalog.courses);
+  }, [stored, catalog]);
 
-  const showingSamples = stored.length === 0;
+  const showingSamples = stored.length === 0 && !catalog.live;
 
   return (
     <View style={styles.screen}>
@@ -177,7 +183,10 @@ export default function DownloadsScreen() {
                     setGateOpen(true);
                     return;
                   }
-                  void removeDownload(item.resourceId).then(load);
+                  void Promise.all([
+                    removeDownload(item.resourceId),
+                    forgetDownload(item.resourceId),
+                  ]).then(load);
                 }}
                 hitSlop={10}
                 accessibilityRole="button"

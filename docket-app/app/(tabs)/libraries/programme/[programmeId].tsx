@@ -2,12 +2,13 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { EmptyState, ListRow, Subtitle } from '@/components/ui';
-import { getCoursesForProgramme, getProgramme } from '@/constants/catalog';
 import { colors, spacing } from '@/constants/theme';
+import { useCatalog } from '@/lib/catalog';
 
 export default function ProgrammeCoursesScreen() {
   const { programmeId } = useLocalSearchParams<{ programmeId: string }>();
   const router = useRouter();
+  const { getProgramme, getCoursesForProgramme } = useCatalog();
   const programme = getProgramme(programmeId);
   const courses = getCoursesForProgramme(programmeId);
 

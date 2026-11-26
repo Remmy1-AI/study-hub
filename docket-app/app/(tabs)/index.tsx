@@ -13,15 +13,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Meta, SectionLabel } from '@/components/ui';
-import {
-  COURSES,
-  getCoursesForProgramme,
-  PROGRAMMES,
-  RESOURCE_TYPE_LABEL,
-  RESOURCES,
-} from '@/constants/catalog';
+import { RESOURCE_TYPE_LABEL } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 
 function greetingForHour(hour: number) {
   if (hour < 12) return 'Good morning';
@@ -47,6 +42,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { programmes, courses, resources, getCoursesForProgramme } = useCatalog();
   const [query, setQuery] = useState('');
 
   const greeting = useMemo(() => greetingForHour(new Date().getHours()), []);
@@ -56,12 +52,12 @@ export default function HomeScreen() {
   const stickyStackH = heroHeight + SEARCH_BAR_H - SEARCH_OVERLAP;
 
   const carouselItems = useMemo(() => {
-    const withCourses = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length > 0);
-    const rest = PROGRAMMES.filter((p) => getCoursesForProgramme(p.id).length === 0).slice(0, 8);
+    const withCourses = programmes.filter((p) => getCoursesForProgramme(p.id).length > 0);
+    const rest = programmes.filter((p) => getCoursesForProgramme(p.id).length === 0).slice(0, 8);
     return [...withCourses, ...rest];
-  }, []);
+  }, [programmes, getCoursesForProgramme]);
 
-  const trending = RESOURCES.slice(0, 6);
+  const trending = resources.slice(0, 6);
 
   function onSearchSubmit() {
     router.push('/(tabs)/libraries');
@@ -116,7 +112,7 @@ export default function HomeScreen() {
             <SectionLabel>Trending learning materials</SectionLabel>
           </View>
           {trending.map((r) => {
-            const course = COURSES.find((c) => c.id === r.courseId);
+            const course = courses.find((c) => c.id === r.courseId);
             return (
               <Pressable
                 key={r.id}

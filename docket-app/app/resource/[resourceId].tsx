@@ -4,14 +4,12 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { Body, Meta, PrimaryButton, SecondaryButton, Title } from '@/components/ui';
-import {
-  getCourse,
-  getResource,
-  RESOURCE_TYPE_LABEL,
-} from '@/constants/catalog';
+import { RESOURCE_TYPE_LABEL } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 import { addDownload } from '@/lib/downloads';
+import { recordDownload } from '@/lib/userData';
 
 /**
  * Resource detail — preview-first; Open viewer + Download as secondary chrome.
@@ -21,6 +19,7 @@ export default function ResourceDetailScreen() {
   const { resourceId } = useLocalSearchParams<{ resourceId: string }>();
   const router = useRouter();
   const { requireAuthForAction } = useAuth();
+  const { getCourse, getResource, loading } = useCatalog();
   const resource = getResource(resourceId);
   const course = resource ? getCourse(resource.courseId) : undefined;
   const [gateOpen, setGateOpen] = useState(false);
@@ -35,6 +34,7 @@ export default function ResourceDetailScreen() {
       sizeLabel: resource.sizeLabel,
       savedAt: new Date().toISOString(),
     });
+    if (result === 'added') void recordDownload(resource.id);
     setStatus(result === 'exists' ? 'Already in Downloads.' : 'Saved offline — see Downloads.');
   }
 
@@ -51,8 +51,8 @@ export default function ResourceDetailScreen() {
     return (
       <View style={styles.screen}>
         <Stack.Screen options={{ title: 'Resource' }} />
-        <Title>Not found</Title>
-        <Body>This sample resource is missing.</Body>
+        <Title>{loading ? 'Loading…' : 'Not found'}</Title>
+        {loading ? null : <Body>This resource is missing.</Body>}
       </View>
     );
   }

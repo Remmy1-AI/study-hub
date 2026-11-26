@@ -2,19 +2,17 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { EmptyState, ListRow, Subtitle } from '@/components/ui';
-import {
-  getCourse,
-  getResourcesForCourse,
-  RESOURCE_TYPE_LABEL,
-} from '@/constants/catalog';
+import { RESOURCE_TYPE_LABEL } from '@/constants/catalog';
 import { colors, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 
 /** Course resource list — preview before download (Bytepad spine). */
 export default function CourseResourcesScreen() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { getCourse, getResourcesForCourse } = useCatalog();
   const course = getCourse(courseId);
   const resources = getResourcesForCourse(courseId);
 
