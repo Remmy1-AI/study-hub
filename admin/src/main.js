@@ -252,6 +252,26 @@ function renderAll() {
   renderProgrammes();
 }
 
+function shareLink(m) {
+  const slug = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60)
+      .replace(/-+$/g, "") || "material";
+  const code = String(m.course_code || "").trim().toLowerCase().replace(/\s+/g, "");
+  const cm = code.match(/^([a-z]+)(\d+)/);
+  const course = !code ? "general" : cm ? `${cm[1]}-${cm[2]}` : slug(code);
+  let title = String(m.title || "").replace(/\.(pdf|pptx?|docx?|xlsx?|mp4|zip)$/i, "").replace(/_+/g, " ").trim();
+  if (m.course_code) {
+    const stripped = title.replace(new RegExp(`^${String(m.course_code).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s*")}\\s*[-–—:.]?\\s*`, "i"), "");
+    if (stripped) title = stripped;
+  }
+  return `https://mryeboah.study/s/${course}/${slug(title)}~${String(m.id).replace(/-/g, "").slice(0, 8)}`;
+}
+
 function renderResources() {
   const programmeId = $("#res-filter-programme").value;
   const type = $("#res-filter-type").value;
@@ -273,6 +293,7 @@ function renderResources() {
         <td><span class="pill ${m.published ? "pill-on" : "pill-off"}">${m.published ? "Published" : "Hidden"}</span></td>
         <td class="actions">
           <button class="link" data-act="open" data-id="${esc(m.id)}" type="button">Open</button>
+          ${m.published ? `<button class="link" data-act="share" data-id="${esc(m.id)}" type="button">Copy link</button>` : ""}
           <button class="link" data-act="edit" data-id="${esc(m.id)}" type="button">Edit</button>
           <button class="link" data-act="toggle" data-id="${esc(m.id)}" type="button">${m.published ? "Hide" : "Publish"}</button>
           <button class="link danger" data-act="delete" data-id="${esc(m.id)}" type="button">Delete</button>
@@ -653,6 +674,15 @@ function onResourceAction(e) {
   if (act === "open") {
     const url = fileUrl(row);
     if (url) window.open(url, "_blank", "noopener");
+  } else if (act === "share") {
+    const link = shareLink(row);
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = "Copy link"), 1500);
+      })
+      .catch(() => window.prompt("Copy this link", link));
   } else if (act === "edit") {
     fillCourseList();
     editResource(row);
