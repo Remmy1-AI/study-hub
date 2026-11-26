@@ -53,11 +53,24 @@ If `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing or s
 2. Enter OTP **`123456`** (mock only; not shown in UI).
 3. Land on Home with your name in the hero.
 
-### Real Supabase OTP
+### Live Supabase (Yeboah project)
 
-1. Enable Phone provider in the Supabase project.
-2. Put Project URL + anon key in `.env`.
-3. Restart Expo (`npx expo start -c`).
+`app.config.js` maps **only** the Project URL + anon key into `expo.extra`:
+`EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (`.env` / EAS) win, else
+`YEBOAH_SUPABASE_URL` / `YEBOAH_SUPABASE_ANON_KEY` (Cloud Agent secrets). Restart Expo
+(`npx expo start -c`) after changing them. Never add the service role key, access token,
+DB password or BulkClix key to the app.
+
+When configured:
+
+- Catalogue comes from `programmes`, `courses` and published `materials` (public read).
+  Courses are also derived from `materials.course_code` + `department`, so Ace web uploads show up.
+- Phone OTP uses `supabase.auth.signInWithOtp` / `verifyOtp`. SMS goes out through the
+  `send-sms-hook` Edge Function (Supabase Send SMS hook → BulkClix).
+- Viewer opens save `reading_progress`, bookmarks save to `bookmarks`, downloads record to
+  `downloads` (all owner-only RLS, signed-in users only).
+
+Backend setup lives in `../supabase/schema_docket.sql` and `../supabase/functions/send-sms-hook/`.
 
 ## Brand
 

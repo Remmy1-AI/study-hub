@@ -1,11 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getResource } from '@/constants/catalog';
 import { colors, spacing, typography } from '@/constants/theme';
+import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
+import { isBookmarked, recordProgress, setBookmark } from '@/lib/userData';
 
 /**
  * In-app viewer stub — Adobe Reader cue: page-first canvas;
@@ -15,9 +17,29 @@ export default function ViewerScreen() {
   const { resourceId } = useLocalSearchParams<{ resourceId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { getResource } = useCatalog();
   const resource = getResource(resourceId);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    if (!resourceId) return;
+    let cancelled = false;
+    void isBookmarked(resourceId).then((on) => {
+      if (!cancelled) setBookmarked(on);
+    });
+    if (user) void recordProgress(resourceId, 1);
+    return () => {
+      cancelled = true;
+    };
+  }, [resourceId, user]);
+
+  function toggleBookmark() {
+    const next = !bookmarked;
+    setBookmarked(next);
+    void setBookmark(resourceId, next);
+  }
 
   return (
     <View style={styles.root}>
@@ -40,7 +62,7 @@ export default function ViewerScreen() {
             {resource?.title ?? 'Viewer'}
           </Text>
           <Pressable
-            onPress={() => setBookmarked((b) => !b)}
+            onPress={toggleBookmark}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Bookmark">

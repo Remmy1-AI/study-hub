@@ -19,8 +19,9 @@ export type Resource = {
   id: string;
   courseId: string;
   title: string;
-  type: 'slides' | 'notes' | 'past-questions' | 'tutorials' | 'videos';
+  type: 'slides' | 'notes' | 'past-questions' | 'tutorials' | 'videos' | 'shared';
   sizeLabel: string;
+  fileUrl?: string;
 };
 
 export const PROGRAMMES: Programme[] = [
@@ -152,4 +153,5 @@ export const RESOURCE_TYPE_LABEL: Record<Resource['type'], string> = {
   'past-questions': 'Past Questions',
   tutorials: 'Tutorials',
   videos: 'Videos',
+  shared: 'Shared',
 };

@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getCoursesForProgramme, PROGRAMMES, type Programme } from '@/constants/catalog';
+import { type Programme } from '@/constants/catalog';
+import { useCatalog } from '@/lib/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 
 const SEARCH_OVERLAP = 18;
@@ -27,6 +28,7 @@ const CONTENT_GAP = 40;
 export default function LibrariesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { programmes: allProgrammes } = useCatalog();
   const [query, setQuery] = useState('');
 
   const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
@@ -34,14 +36,14 @@ export default function LibrariesScreen() {
 
   const programmes = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return PROGRAMMES;
-    return PROGRAMMES.filter(
+    if (!q) return allProgrammes;
+    return allProgrammes.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.short.toLowerCase().includes(q) ||
         p.code.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, allProgrammes]);
 
   return (
     <View style={styles.screen}>
@@ -118,6 +120,7 @@ function ProgrammeTile({
   programme: Programme;
   onPress: () => void;
 }) {
+  const { getCoursesForProgramme } = useCatalog();
   const count = getCoursesForProgramme(programme.id).length;
   return (
     <Pressable

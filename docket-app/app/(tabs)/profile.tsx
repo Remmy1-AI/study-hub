@@ -16,15 +16,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Meta, SectionLabel } from '@/components/ui';
-import {
-  COURSES,
-  PROGRAMMES,
-  RESOURCE_TYPE_LABEL,
-  RESOURCES,
-} from '@/constants/catalog';
+import { PROGRAMMES, RESOURCE_TYPE_LABEL, type Resource } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 import { listDownloads, removeDownload } from '@/lib/downloads';
+import { forgetDownload, listRecentProgress } from '@/lib/userData';
 
 const CONTENT_GAP = 40;
 const COMMUNITY_URL = 'https://mryeboah.study';
@@ -45,6 +42,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut, loading } = useAuth();
+  const { programmes, courses, resources, getResource } = useCatalog();
+  const [recentIds, setRecentIds] = useState<string[]>([]);
   const heroHeight = Math.round(Dimensions.get('window').height * 0.2);
   const [offlineCount, setOfflineCount] = useState(0);
 
@@ -57,7 +56,21 @@ export default function ProfileScreen() {
     void refreshStorage();
   }, [refreshStorage, user]);
 
-  const continueItems = RESOURCES.slice(0, 5);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void listRecentProgress(5).then((ids) => {
+      if (!cancelled) setRecentIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const recent = recentIds
+    .map((id) => getResource(id))
+    .filter((r): r is Resource => Boolean(r));
+  const continueItems = recent.length > 0 ? recent : resources.slice(0, 5);
 
   async function onShare() {
     try {
@@ -91,7 +104,9 @@ export default function ProfileScreen() {
             ]);
           });
     if (!confirmClear) return;
-    await Promise.all(items.map((i) => removeDownload(i.resourceId)));
+    await Promise.all(
+      items.flatMap((i) => [removeDownload(i.resourceId), forgetDownload(i.resourceId)]),
+    );
     await refreshStorage();
   }
 
@@ -144,7 +159,7 @@ export default function ProfileScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.carouselRow}>
                 {continueItems.map((r) => {
-                  const course = COURSES.find((c) => c.id === r.courseId);
+                  const course = courses.find((c) => c.id === r.courseId);
                   return (
                     <Pressable
                       key={r.id}
@@ -169,6 +184,7 @@ export default function ProfileScreen() {
                 label="Programme"
                 value={(() => {
                   const p =
+                    programmes.find((x) => x.id === user.programmeId) ??
                     PROGRAMMES.find((x) => x.id === user.programmeId) ??
                     PROGRAMMES.find((x) => x.id === 'electrical')!;
                   return `${p.short} · ${p.code}`;

@@ -19,9 +19,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PROGRAMMES } from '@/constants/catalog';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useCatalog } from '@/lib/catalog';
 
 type Phase = 'brand' | 'phone' | 'signup' | 'otp';
 
@@ -35,6 +35,7 @@ export default function SplashAuthScreen() {
   const insets = useSafeAreaInsets();
   const { shot } = useLocalSearchParams<{ shot?: string }>();
   const { user, loading, sendOtp, verifyOtp } = useAuth();
+  const { programmes } = useCatalog();
   const [phase, setPhase] = useState<Phase>('brand');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
@@ -241,7 +242,7 @@ export default function SplashAuthScreen() {
 
                 <Text style={styles.label}>Programme</Text>
                 <View style={styles.programmeGrid}>
-                  {PROGRAMMES.map((p) => {
+                  {programmes.map((p) => {
                     const active = programmeId === p.id;
                     return (
                       <Pressable
