@@ -9,5 +9,10 @@
   },
   "devDependencies": {
     "vite": "^8.4.0"
+  },
+  "dependencies": {
+    "@vercel/og": "^0.6.8",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0"
   }
 }
