@@ -42,6 +42,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "remmy.s",
+    "extra": {
+      "eas": {
+        "projectId": "199b96da-9d74-4993-9312-2c1802da8fe8"
+      }
     }
   }
 }
