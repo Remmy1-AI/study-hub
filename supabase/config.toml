@@ -1,0 +1,4 @@
+project_id = "yeboah"
+
+[functions.send-sms-hook]
+verify_jwt = false
