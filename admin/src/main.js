@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from "./config.js";
 
-const SUPABASE_URL = __SUPABASE_URL__;
-const SUPABASE_ANON_KEY = __SUPABASE_ANON_KEY__;
+const SUPABASE_URL = __SUPABASE_URL__ || PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = __SUPABASE_ANON_KEY__ || PUBLIC_SUPABASE_ANON_KEY;
 const BUCKET = "materials";
 const MAX_BYTES = 50 * 1024 * 1024;
 
