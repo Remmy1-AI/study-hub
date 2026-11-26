@@ -1,0 +1,16 @@
+{
+  "name": "mryeboah-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2"
+  },
+  "devDependencies": {
+    "vite": "^8.4.0"
+  }
+}

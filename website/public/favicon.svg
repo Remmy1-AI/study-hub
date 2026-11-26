@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#7A1F1F"/>
+  <text x="32" y="44" text-anchor="middle" font-family="'Libre Baskerville', Georgia, serif" font-size="34" font-weight="700" fill="#F3F0E6">Y</text>
+  <rect x="20" y="49" width="24" height="3" rx="1.5" fill="#C9A227"/>
+</svg>
